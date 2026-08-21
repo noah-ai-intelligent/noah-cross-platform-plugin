@@ -54,15 +54,14 @@ export function ActionBar({ children }: { children: React.ReactNode }) {
   return <div className="flex gap-1 flex-wrap mt-1">{children}</div>;
 }
 
-export function LoadingState({ activity }: { activity: string }) {
+export function LoadingState({ activity: _activity }: { activity: string }) {
   return (
-    <div className="flex items-center gap-2 text-ink-muted text-[13px] p-1">
-      <span className="inline-flex gap-[3px] animate-pulse">
-        <span className="w-[5px] h-[5px] rounded-full bg-ink-muted" />
-        <span className="w-[5px] h-[5px] rounded-full bg-ink-muted" />
-        <span className="w-[5px] h-[5px] rounded-full bg-ink-muted" />
-      </span>
-      {activity || "Thinking…"}
+    <div className="flex flex-col gap-1 items-start my-1 animate-fadeIn">
+      <div className="inline-flex items-center justify-center gap-1.5 bg-surface border border-border rounded-[14px] py-2 px-3 min-h-[35px] box-border">
+        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-1" />
+        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-2" />
+        <span className="w-1.5 h-1.5 rounded-full bg-accent animate-dot-3" />
+      </div>
     </div>
   );
 }
@@ -194,7 +193,7 @@ export function ConversationList({
     return (
       <div className="flex flex-col items-center justify-center gap-2 h-full text-ink-muted text-[13px] text-center py-8 px-5">
         <span>No conversations yet</span>
-        <span className="text-[12px] text-ink-muted mt-[2px]">Questions you ask NoahAI will show up here.</span>
+        <span className="text-[12px] text-ink-muted mt-[2px]">Questions you ask Noah will show up here.</span>
       </div>
     );
   }
