@@ -23,7 +23,7 @@
   ],
   "addOns": {
     "common": {
-      "name": "Noah Cross Platform",
+      "name": "NoahAI",
       "logoUrl": "https://noah.enpointe.io/brand/logo-green.svg",
       "layoutProperties": {
         "primaryColor": "#0d5c63"

@@ -1,19 +1,19 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Noah</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script
-      type="text/javascript"
-      src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"
-    ></script>
-    <script>
-      window.__GOOGLE_HOST__ = "<?= typeof hostType !== 'undefined' ? hostType : '' ?>";
-    </script>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/taskpane/main.tsx"></script>
-  </body>
+
+<head>
+  <meta charset="UTF-8" />
+  <title>NoahAI</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script type="text/javascript" src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script>
+    window.__GOOGLE_HOST__ = "<?= typeof hostType !== 'undefined' ? hostType : '' ?>";
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/taskpane/main.tsx"></script>
+</body>
+
 </html>

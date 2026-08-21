@@ -14,7 +14,7 @@ function getHostType() {
 
 function onOpen(e) {
   var ui = getActiveUi();
-  ui.createMenu('Noah Cross-Platform')
+  ui.createMenu('NoahAI')
     .addItem('Open Sidebar', 'showSidebar')
     .addToUi();
 }
@@ -26,7 +26,7 @@ function onInstall(e) {
 function showSidebar() {
   var html = HtmlService.createTemplateFromFile('index');
   html.hostType = getHostType();
-  getActiveUi().showSidebar(html.evaluate().setTitle('Noah').setWidth(350));
+  getActiveUi().showSidebar(html.evaluate().setTitle('NoahAI').setWidth(350));
 }
 
 function insertTableInGoogle(table, isUpdate) {
@@ -171,21 +171,21 @@ function createSidebarCard() {
   var card = CardService.newCardBuilder();
   card.setHeader(
     CardService.newCardHeader()
-      .setTitle("Noah")
+      .setTitle("NoahAI")
       .setImageUrl("https://noah.enpointe.io/brand/logo-green.png")
   );
   var section = CardService.newCardSection();
   
   section.addWidget(
     CardService.newTextParagraph().setText(
-      "Noah is ready!\n\nIf the interactive sidebar didn't open automatically, or if you closed it previously, click the button below to launch it."
+      "NoahAI is ready!\n\nIf the interactive sidebar didn't open automatically, or if you closed it previously, click the button below to launch it."
     )
   );
   
   var action = CardService.newAction().setFunctionName('showSidebar');
   section.addWidget(
     CardService.newTextButton()
-      .setText('Launch Noah')
+      .setText('Launch NoahAI')
       .setOnClickAction(action)
       .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
       .setBackgroundColor("#0d5c63")

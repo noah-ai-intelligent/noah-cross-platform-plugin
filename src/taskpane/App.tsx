@@ -531,7 +531,7 @@ export function App() {
     }
     return (
       <div className="w-full h-screen px-4 box-border bg-canvas overflow-y-auto flex flex-col justify-center items-center">
-        <img src={logoUrl} alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img src={logoUrl} alt="NoahAI" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
         <LoginApp
           onSuccess={async () => {
             setSignedIn(true);
@@ -591,7 +591,7 @@ export function App() {
   return (
     <NoahShell>
       <NoahHeader
-        title="Noah"
+        title="NoahAI"
         actions={
           <>
             <button className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-lg border-none bg-transparent text-ink-secondary cursor-pointer hover:bg-surface-hover hover:text-ink" onClick={handleNewChat} aria-label="New chat">

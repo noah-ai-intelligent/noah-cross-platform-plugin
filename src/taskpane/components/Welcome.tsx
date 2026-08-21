@@ -20,7 +20,7 @@ export function WelcomeScreen({
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-8 px-5 gap-2">
       <div className="w-[44px] h-[44px] rounded-[10px] bg-ink text-canvas flex items-center justify-center font-bold text-[16px] mb-2">N</div>
-      <h2 className="text-[19px] font-bold text-ink m-0">Noah, right in your workbook</h2>
+      <h2 className="text-[19px] font-bold text-ink m-0">NoahAI, right in your workbook</h2>
       <p className="text-[13px] text-ink-muted m-0 max-w-[280px]">{subtitle}</p>
       {children}
     </div>

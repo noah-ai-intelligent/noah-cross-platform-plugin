@@ -21,9 +21,9 @@
 
   <Id>4BA9C69B-1E7A-43E0-AB59-290EF1B775AB</Id>
   <Version>1.0.0.0</Version>
-  <ProviderName>Noah</ProviderName>
+  <ProviderName>NoahAI</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Noah" />
+  <DisplayName DefaultValue="NoahAI" />
   <Description DefaultValue="Ask your organization's data a question and insert the answer — a table, a chart, or a number — straight into your document." />
   <IconUrl DefaultValue="https://noah-office.enpointe.io/assets/icon-32.png" />
   <HighResolutionIconUrl DefaultValue="https://noah-office.enpointe.io/assets/icon-80.png" />
@@ -166,9 +166,9 @@
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://noah.enpointe.io/support" />
       </bt:Urls>
       <bt:ShortStrings>
-        <bt:String id="GetStarted.Title" DefaultValue="Noah is ready" />
-        <bt:String id="Noah.Group.Label" DefaultValue="Noah" />
-        <bt:String id="Noah.TaskpaneButton.Label" DefaultValue="Ask Noah" />
+        <bt:String id="GetStarted.Title" DefaultValue="NoahAI is ready" />
+        <bt:String id="Noah.Group.Label" DefaultValue="NoahAI" />
+        <bt:String id="Noah.TaskpaneButton.Label" DefaultValue="Ask NoahAI" />
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="GetStarted.Description" DefaultValue="Ask a question, get a table/chart/number back, insert it into your document." />
