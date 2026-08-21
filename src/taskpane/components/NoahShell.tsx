@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
+import logoUrl from "/assets/icon-80.png";
 
 export function NoahShell({ children }: { children: ReactNode }) {
-  return <div className="flex flex-col h-screen min-w-[300px] overflow-hidden">{children}</div>;
+  return <div className="flex flex-col h-screen w-full min-w-0 max-w-full overflow-hidden relative select-none">{children}</div>;
 }
 
 export function NoahHeader({
@@ -21,7 +22,7 @@ export function NoahHeader({
             <BackIcon />
           </button>
         ) : (
-          <span className="w-[22px] h-[22px] rounded-md bg-ink text-canvas flex items-center justify-center font-bold text-[12px] flex-none">N</span>
+          <img src={logoUrl} alt="Noah Logo" className="w-[22px] h-[22px] object-contain flex-none" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         )}
         <span className="font-semibold text-[14px] text-ink overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
       </div>

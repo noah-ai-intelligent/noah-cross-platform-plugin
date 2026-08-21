@@ -531,7 +531,7 @@ export function App() {
     }
     return (
       <div className="w-full h-screen px-4 box-border bg-canvas overflow-y-auto flex flex-col justify-center items-center">
-        <img src={logoUrl} alt="NoahAI" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img src={logoUrl} alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
         <LoginApp
           onSuccess={async () => {
             setSignedIn(true);
@@ -571,7 +571,12 @@ export function App() {
       <NoahShell>
         <HistoryPage
           orgId={orgId}
+          currentId={conversationId}
           onBack={() => setPage("chat")}
+          onNewChat={() => {
+            handleNewChat();
+            setPage("chat");
+          }}
           onSelect={(conv) => {
             setConversationId(conv.id);
             setMessages([]);
@@ -591,14 +596,30 @@ export function App() {
   return (
     <NoahShell>
       <NoahHeader
-        title="NoahAI"
+        title="Noah"
         actions={
           <>
-            <button className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-lg border-none bg-transparent text-ink-secondary cursor-pointer hover:bg-surface-hover hover:text-ink" onClick={handleNewChat} aria-label="New chat">
-              +
+            <button
+              className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-lg border-none bg-transparent text-ink-secondary cursor-pointer hover:bg-surface-hover hover:text-ink transition-colors duration-150"
+              onClick={handleNewChat}
+              aria-label="New chat"
+              title="New chat"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M8 3.5v9M3.5 8h9" />
+              </svg>
             </button>
-            <button className="w-[30px] h-[30px] inline-flex items-center justify-center rounded-lg border-none bg-transparent text-ink-secondary cursor-pointer hover:bg-surface-hover hover:text-ink" onClick={() => setMenuOpen(true)} aria-label="More">
-              ⋯
+            <button
+              className={`w-[30px] h-[30px] inline-flex items-center justify-center rounded-lg border-none bg-transparent text-ink-secondary cursor-pointer hover:bg-surface-hover hover:text-ink transition-colors duration-150 ${menuOpen ? 'bg-surface-hover text-ink' : ''}`}
+              onClick={() => setMenuOpen((prev) => !prev)}
+              aria-label="More options"
+              title="More options"
+            >
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor">
+                <circle cx="3" cy="8" r="1.25" />
+                <circle cx="8" cy="8" r="1.25" />
+                <circle cx="13" cy="8" r="1.25" />
+              </svg>
             </button>
           </>
         }

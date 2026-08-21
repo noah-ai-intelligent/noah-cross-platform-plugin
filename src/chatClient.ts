@@ -79,6 +79,15 @@ export function listConversations(
   return request(`/organizations/${orgId}/conversations?limit=${limit}`);
 }
 
+export function deleteConversation(
+  orgId: string,
+  conversationId: string
+): Promise<void> {
+  return request(`/organizations/${orgId}/conversations/${conversationId}`, {
+    method: "DELETE",
+  });
+}
+
 export function listMessages(
   orgId: string,
   conversationId: string
