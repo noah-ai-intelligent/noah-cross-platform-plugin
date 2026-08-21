@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { REDIRECT_URI } from "../config";
 import { request } from "../api";
 import { saveTokens } from "../tokenStorage";
 import type { TokenPair } from "../tokenStorage";
 import { isSignedIn } from "../auth";
+import logoUrl from "/assets/icon-80.png";
 import "../styles/tailwind.css";
 
 type Step = "email" | "code" | "org";
@@ -256,20 +257,34 @@ export function LoginApp({
     </svg>
   );
 
-  const inputClass = "w-full box-border h-10 px-3 bg-transparent border border-border rounded-lg text-ink text-[14px] mb-3 outline-none";
+  const inputClass = "w-full box-border h-10 px-3.5 bg-surface hover:bg-surface-hover/60 focus:bg-canvas border border-border focus:border-accent rounded-xl text-ink text-[13.5px] mb-3 outline-none focus:ring-2 focus:ring-accent/20 transition-all";
 
-  const btnBaseClass = "flex items-center justify-center gap-3 w-full h-11 rounded-lg border border-border bg-canvas text-ink text-[14px] font-medium cursor-pointer transition-colors hover:bg-surface hover:border-border-strong disabled:opacity-50 disabled:cursor-not-allowed";
-  const primaryBtnClass = `${btnBaseClass} !bg-ink !text-canvas !border-none mt-2 hover:!bg-black`;
+  const btnBaseClass = "flex items-center justify-center gap-3 w-full h-10 rounded-xl border border-border/80 bg-canvas text-ink text-[13.5px] font-medium cursor-pointer transition-all hover:bg-surface-hover hover:border-border-strong disabled:opacity-50 disabled:cursor-not-allowed";
+  const primaryBtnClass = `${btnBaseClass} !bg-accent !text-white !border-none hover:!bg-accent-hover font-semibold shadow-xs`;
 
   return (
-    <div className="bg-canvas border border-border rounded-xl w-full max-w-[400px] overflow-hidden">
-      <div className="relative p-4 text-center">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-12 bg-accent"></div>
-        <h1 className="text-[20px] font-semibold m-0">Sign in</h1>
-        <p className="text-ink-muted text-[14px] mt-1 mb-0">Just one question away from your data.</p>
+    <div className="bg-canvas border border-border/80 rounded-2xl w-full max-w-[360px] relative shadow-sm box-border">
+      {/* Integrated Logo & Header */}
+      <div className="flex flex-col items-center pt-6 pb-2 px-5 text-center">
+        <img
+          src={logoUrl}
+          alt="Noah Logo"
+          className="w-12 h-12 object-contain mb-3"
+          onError={(e) => { e.currentTarget.style.display = "none"; }}
+        />
+        <h1 className="text-[20px] font-bold text-ink tracking-tight m-0">
+          {step === "org" ? "Select Organization" : step === "code" ? "Verify Code" : "Sign in"}
+        </h1>
+        <p className="text-ink-muted text-[13px] mt-1.5 mb-0 max-w-[280px] leading-relaxed">
+          {step === "org"
+            ? "Your account belongs to multiple organizations. Pick one to continue."
+            : step === "code"
+            ? "Enter the code sent to your email."
+            : "Just one question away from your data."}
+        </p>
       </div>
 
-      <div className="p-4 pt-4 px-8 pb-8 flex flex-col gap-2">
+      <div className="p-5 pt-3 flex flex-col gap-2">
         {step === "email" && (
           <form onSubmit={requestOtp} className="flex flex-col">
             <input
@@ -284,13 +299,13 @@ export function LoginApp({
 
             {captchaRequired && (
               <div className="mb-3">
-                <div className="text-[12px] text-ink-muted mb-1 uppercase">Verify you're human</div>
+                <div className="text-[11px] font-semibold text-ink-muted mb-1 uppercase tracking-wider">Verify you're human</div>
                 <div className="flex flex-col gap-2">
                   <div className="flex gap-2 items-center">
-                    <div className="h-10 w-[120px] bg-border rounded-lg overflow-hidden">
+                    <div className="h-10 w-[120px] bg-border/60 rounded-xl overflow-hidden flex-none">
                       {captcha ? <img src={captcha.image} alt="captcha" className="h-full w-full object-contain" /> : null}
                     </div>
-                    <button type="button" onClick={loadCaptcha} className="bg-transparent border border-zinc-200 rounded-lg px-3 h-10 cursor-pointer text-[12px] text-ink-secondary">
+                    <button type="button" onClick={loadCaptcha} className="bg-surface border border-border rounded-xl px-3 h-10 cursor-pointer text-[12px] font-medium text-ink-secondary hover:bg-surface-hover transition-colors">
                       Refresh
                     </button>
                   </div>
@@ -312,16 +327,16 @@ export function LoginApp({
               {submitting ? "Sending..." : "Send one-time code"}
             </button>
 
-            <div className="flex items-center my-5">
-              <div className="flex-1 h-px bg-border"></div>
-              <span className="text-[12px] text-ink-muted px-2">or with SSO</span>
-              <div className="flex-1 h-px bg-border"></div>
+            <div className="flex items-center my-4">
+              <div className="flex-1 h-px bg-border/70"></div>
+              <span className="text-[12px] font-medium text-ink-muted px-2.5">or with SSO</span>
+              <div className="flex-1 h-px bg-border/70"></div>
             </div>
 
             <button type="button" onClick={() => startSso("google")} disabled={submitting} className={`${btnBaseClass} px-4 text-[#3c4043] border-[#dadce0] bg-white`}>
               <GoogleIcon /> <span className="flex-1 text-center pr-[18px]">Continue with Google</span>
             </button>
-            <div className="h-3"></div>
+            <div className="h-2"></div>
             <button type="button" onClick={() => startSso("microsoft")} disabled={submitting} className={`${btnBaseClass} px-4 text-[#5e5e5e] border-[#8c8c8c] bg-white`}>
               <MicrosoftIcon /> <span className="flex-1 text-center pr-[18px]">Continue with Microsoft</span>
             </button>
@@ -330,10 +345,10 @@ export function LoginApp({
 
         {step === "code" && (
           <form onSubmit={verifyOtp} className="flex flex-col">
-            <div className="text-[14px] text-ink-muted mb-5 text-center leading-relaxed">
-              Code sent to <strong className="text-ink">{email}</strong>
+            <div className="text-[13.5px] text-ink-muted mb-4 text-center leading-relaxed">
+              Code sent to <strong className="text-ink font-semibold">{email}</strong>
               <div
-                className="text-emerald cursor-pointer mt-1 text-[13px] font-medium"
+                className="text-accent hover:text-accent-hover cursor-pointer mt-1 text-[12.5px] font-semibold"
                 onClick={() => setStep("email")}
               >
                 Change email address
@@ -348,18 +363,18 @@ export function LoginApp({
               required
               disabled={submitting}
               maxLength={6}
-              className={`${inputClass} tracking-[16px] pl-[28px] text-center text-[24px] !h-14 font-semibold font-mono`}
+              className={`${inputClass} tracking-[14px] pl-[24px] text-center text-[22px] !h-13 font-semibold font-mono`}
             />
 
             {error && <div className="text-danger text-[13px] mb-3 text-center">{error}</div>}
 
-            <div className="text-[13px] text-ink-muted mb-5 text-center">
+            <div className="text-[12.5px] text-ink-muted mb-4 text-center">
               Check your inbox. <span className="ml-[2px]"></span>
               <button
                 type="button"
                 onClick={() => requestOtp()}
                 disabled={resendIn > 0 || submitting}
-                className={`border-none bg-transparent text-[13px] p-0 font-medium ${resendIn > 0 ? "text-ink-muted cursor-default" : "text-emerald cursor-pointer"}`}
+                className={`border-none bg-transparent text-[12.5px] p-0 font-semibold ${resendIn > 0 ? "text-ink-muted cursor-default" : "text-accent cursor-pointer"}`}
               >
                 {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
               </button>
@@ -372,23 +387,16 @@ export function LoginApp({
         )}
 
         {step === "org" && (
-          <div className="flex flex-col">
-            <div className="text-[14px] text-ink-muted mb-4">
-              Your account belongs to multiple organizations. Pick the one you want to work in.
-            </div>
-
-            <label className="text-[12px] text-ink-muted mb-1 font-semibold">Organization</label>
-            <select
-              value={selectedOrg}
-              onChange={(e) => setSelectedOrg(e.target.value)}
-              className={`${inputClass} p-2 appearance-auto`}
-            >
-              {orgs.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.name}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col pt-1">
+            <label className="text-[12px] font-semibold text-ink-muted mb-1.5 px-0.5">
+              Organization
+            </label>
+            
+            <CustomOrgDropdown
+              orgs={orgs}
+              selectedOrg={selectedOrg}
+              onSelect={(id) => setSelectedOrg(id)}
+            />
 
             <button
               onClick={() => {
@@ -396,7 +404,7 @@ export function LoginApp({
                   handleSuccess(pendingTokens, selectedOrg);
                 }
               }}
-              className={`${primaryBtnClass} mt-4`}
+              className={primaryBtnClass}
             >
               Continue
             </button>
@@ -406,3 +414,96 @@ export function LoginApp({
     </div>
   );
 }
+
+// Custom Dropdown Component
+function CustomOrgDropdown({
+  orgs,
+  selectedOrg,
+  onSelect,
+}: {
+  orgs: { id: string; name: string }[];
+  selectedOrg: string;
+  onSelect: (id: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const selectedName = useMemo(() => {
+    return orgs.find((o) => o.id === selectedOrg)?.name || "Select Organization";
+  }, [orgs, selectedOrg]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setIsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={dropdownRef} className="relative w-full mb-4">
+      {/* Trigger Button */}
+      <button
+        type="button"
+        onClick={() => setIsOpen((prev) => !prev)}
+        className={`flex items-center justify-between w-full h-11 px-3.5 bg-surface hover:bg-surface-hover/80 border rounded-xl text-[13.5px] font-medium transition-all cursor-pointer select-none ${
+          isOpen ? "border-accent ring-2 ring-accent/20 bg-canvas" : "border-border text-ink"
+        }`}
+      >
+        <span className="truncate text-ink font-medium">{selectedName}</span>
+        <ChevronDownIcon
+          className={`w-4 h-4 text-ink-muted flex-none transition-transform duration-200 ${
+            isOpen ? "rotate-180 text-accent" : ""
+          }`}
+        />
+      </button>
+
+      {/* Popover Menu */}
+      {isOpen && (
+        <div className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-canvas border border-border rounded-xl shadow-xl p-1.5 space-y-1 max-h-48 overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {orgs.map((o) => {
+            const isSelected = o.id === selectedOrg;
+            return (
+              <div
+                key={o.id}
+                onClick={() => {
+                  onSelect(o.id);
+                  setIsOpen(false);
+                }}
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
+                  isSelected
+                    ? "bg-accent-soft/70 text-accent font-semibold"
+                    : "text-ink hover:bg-surface-hover"
+                }`}
+              >
+                <span className="truncate">{o.name}</span>
+                {isSelected && <CheckIcon className="w-4 h-4 text-accent flex-none ml-2" />}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Icons
+function ChevronDownIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor">
+      <path d="M4 6l4 4 4-4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "w-4 h-4" }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" stroke="currentColor">
+      <path d="M13.333 4L6 11.333 2.667 8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+
