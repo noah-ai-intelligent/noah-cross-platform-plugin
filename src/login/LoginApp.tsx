@@ -279,8 +279,8 @@ export function LoginApp({
           {step === "org"
             ? "Your account belongs to multiple organizations. Pick one to continue."
             : step === "code"
-            ? "Enter the code sent to your email."
-            : "Just one question away from your data."}
+              ? "Enter the code sent to your email."
+              : "Just one question away from your data."}
         </p>
       </div>
 
@@ -391,7 +391,7 @@ export function LoginApp({
             <label className="text-[12px] font-semibold text-ink-muted mb-1.5 px-0.5">
               Organization
             </label>
-            
+
             <CustomOrgDropdown
               orgs={orgs}
               selectedOrg={selectedOrg}
@@ -448,15 +448,13 @@ function CustomOrgDropdown({
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
-        className={`flex items-center justify-between w-full h-11 px-3.5 bg-surface hover:bg-surface-hover/80 border rounded-xl text-[13.5px] font-medium transition-all cursor-pointer select-none ${
-          isOpen ? "border-accent ring-2 ring-accent/20 bg-canvas" : "border-border text-ink"
-        }`}
+        className={`flex items-center justify-between w-full h-11 px-3.5 bg-surface hover:bg-surface-hover/80 border rounded-xl text-[13.5px] font-medium transition-all cursor-pointer select-none ${isOpen ? "border-accent ring-2 ring-accent/20 bg-canvas" : "border-border text-ink"
+          }`}
       >
         <span className="truncate text-ink font-medium">{selectedName}</span>
         <ChevronDownIcon
-          className={`w-4 h-4 text-ink-muted flex-none transition-transform duration-200 ${
-            isOpen ? "rotate-180 text-accent" : ""
-          }`}
+          className={`w-4 h-4 text-ink-muted flex-none transition-transform duration-200 ${isOpen ? "rotate-180 text-accent" : ""
+            }`}
         />
       </button>
 
@@ -472,11 +470,10 @@ function CustomOrgDropdown({
                   onSelect(o.id);
                   setIsOpen(false);
                 }}
-                className={`flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${
-                  isSelected
+                className={`flex items-center justify-between px-3 py-2 rounded-lg text-[13px] font-medium cursor-pointer transition-colors ${isSelected
                     ? "bg-accent-soft/70 text-accent font-semibold"
                     : "text-ink hover:bg-surface-hover"
-                }`}
+                  }`}
               >
                 <span className="truncate">{o.name}</span>
                 {isSelected && <CheckIcon className="w-4 h-4 text-accent flex-none ml-2" />}

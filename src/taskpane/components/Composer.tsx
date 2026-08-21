@@ -60,7 +60,7 @@ export function Composer({
           <textarea
             className="flex-1 border-none outline-none resize-none bg-transparent text-ink text-[13px] leading-normal max-h-[120px] py-1 px-0.5"
             rows={2}
-            placeholder="Ask Noah for help, or describe what you want to do…"
+            placeholder="Ask NoahAI for help, or describe what you want to do…"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             onKeyDown={(e) => {
