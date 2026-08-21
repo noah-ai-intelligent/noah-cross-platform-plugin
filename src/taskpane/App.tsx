@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { isSignedIn, signIn } from "../auth";
 import { clearTokens } from "../tokenStorage";
-const logoUrl = "https://noah-office.enpointe.io/assets/icon-80.png";
+// const logoUrl = "https://noah-office.enpointe.io/assets/icon-80.png";
 import {
   AddonAgent,
   AddonAnswer,
@@ -531,7 +531,7 @@ export function App() {
     }
     return (
       <div className="w-full h-screen px-4 box-border bg-canvas overflow-y-auto flex flex-col justify-center items-center">
-        <img src={logoUrl} alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        {/* <img src={logoUrl} alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} /> */}
         <LoginApp
           onSuccess={async () => {
             setSignedIn(true);
