@@ -34,11 +34,14 @@ const safeRenderApp = () => {
 };
 
 const startApp = () => {
-  if (document.getElementById("root")) {
-    safeRenderApp();
-  } else {
-    document.addEventListener("DOMContentLoaded", safeRenderApp);
-  }
+  const tryRender = () => {
+    if (document.getElementById("root")) {
+      safeRenderApp();
+    } else {
+      setTimeout(tryRender, 10);
+    }
+  };
+  tryRender();
 };
 
 try {

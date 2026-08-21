@@ -161,14 +161,29 @@ function handleCitationInGoogle(citation) {
 }
 
 function createSidebarCard() {
+  // Automatically open the custom HTML sidebar when the add-on icon is clicked.
+  try {
+    showSidebar();
+  } catch (e) {
+    console.error("Failed to auto-open sidebar:", e);
+  }
+
   var card = CardService.newCardBuilder();
   card.setHeader(CardService.newCardHeader().setTitle("Noah Cross-Platform"));
   var section = CardService.newCardSection();
   
   section.addWidget(
     CardService.newTextParagraph().setText(
-      "Welcome to Noah!\\n\\nTo use the full interactive add-on, please open it from the top document menu:\\n\\nExtensions > Noah Cross Platform > Open Sidebar"
+      "Noah is now open in the custom sidebar!\\n\\nIf you don't see it, you can also open it from the top menu:\\nExtensions > Noah Cross Platform > Open Sidebar"
     )
+  );
+  
+  // Provide a fallback button just in case
+  var action = CardService.newAction().setFunctionName('showSidebar');
+  section.addWidget(
+    CardService.newTextButton()
+      .setText('Open Sidebar Manually')
+      .setOnClickAction(action)
   );
   
   card.addSection(section);

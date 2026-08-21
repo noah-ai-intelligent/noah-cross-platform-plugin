@@ -36,9 +36,13 @@ export type Host = "Word" | "Excel" | "PowerPoint" | "GoogleSheets" | "GoogleDoc
 
 export function currentHost(): Host {
   // @ts-ignore
-  if (typeof window !== "undefined" && window.__GOOGLE_HOST__ && !window.__GOOGLE_HOST__.startsWith("<?")) {
+  if (typeof window !== "undefined" && window.__GOOGLE_HOST__) {
     // @ts-ignore
-    return window.__GOOGLE_HOST__ as Host;
+    const host = window.__GOOGLE_HOST__;
+    // Check if it doesn't start with the scriptlet tag < + ? to avoid putting the literal sequence in code
+    if (!(host.length >= 2 && host[0] === "<" && host[1] === "?")) {
+      return host as Host;
+    }
   }
   // @ts-ignore
   if (typeof google !== "undefined" && google.script) {

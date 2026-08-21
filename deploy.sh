@@ -6,10 +6,10 @@ npm run build:google
 
 echo "Patching index.html to avoid type='module' which Apps Script ignores..."
 if [ "$(uname)" = "Darwin" ]; then
-  sed -i '' 's/type="module" crossorigin/type="text\/javascript" defer/g' dist/src/taskpane/index.html
+  sed -i '' 's/type="module" crossorigin/type="text\/javascript"/g' dist/src/taskpane/index.html
   sed -i '' '/office\.js/d' dist/src/taskpane/index.html
 else
-  sed -i 's/type="module" crossorigin/type="text\/javascript" defer/g' dist/src/taskpane/index.html
+  sed -i 's/type="module" crossorigin/type="text\/javascript"/g' dist/src/taskpane/index.html
   sed -i '/office\.js/d' dist/src/taskpane/index.html
 fi
 

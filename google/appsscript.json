@@ -10,7 +10,8 @@
   "urlFetchWhitelist": [
     "https://noah-plugin.enpointe.io/",
     "https://noah.enpointe.io/",
-    "https://staging.noah.enpointe.io/"
+    "https://staging.noah.enpointe.io/",
+    "https://noah-office.enpointe.io/"
   ],
   "oauthScopes": [
     "https://www.googleapis.com/auth/script.external_request",

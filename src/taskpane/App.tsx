@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useMemo } from "react";
 import { isSignedIn, signIn } from "../auth";
 import { clearTokens } from "../tokenStorage";
-import logoUrl from "/assets/icon-80.png";
+const logoUrl = "https://noah-office.enpointe.io/assets/icon-80.png";
 import {
   AddonAgent,
   AddonAnswer,
@@ -224,7 +224,7 @@ export function App() {
             window.Office?.EventType.DocumentSelectionChanged,
             refresh
           );
-        } catch {}
+        } catch { }
       }
     };
   }, [host]);
@@ -408,10 +408,10 @@ export function App() {
             const currentText = (msg.content[0] as any).text;
             let suffix = `*Inserted ${insertedCount} item(s) directly into your document.*`;
             if (insertedDetails.length > 0) {
-                suffix = `*Inserted ${insertedCount} item(s) directly into your document at ${insertedDetails.join(", ")}.*`;
+              suffix = `*Inserted ${insertedCount} item(s) directly into your document at ${insertedDetails.join(", ")}.*`;
             }
-            const newText = currentText 
-              ? `${currentText}\n\n${suffix}` 
+            const newText = currentText
+              ? `${currentText}\n\n${suffix}`
               : suffix;
             return { ...msg, content: [{ type: "text", text: newText }] };
           }
