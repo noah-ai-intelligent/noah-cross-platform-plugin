@@ -1,4 +1,4 @@
-import { defineConfig, ViteDevServer } from "vite";
+import { defineConfig, ViteDevServer, UserConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "path";
 import { viteSingleFile } from "vite-plugin-singlefile";
@@ -9,9 +9,12 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 // picks up here. Three entry points: the taskpane (the main UI), the login
 // dialog (opened via Office.context.ui.displayDialogAsync for the OAuth
 // flow), and the ribbon-command function file.
-export default defineConfig(async () => {
-  const devCerts = await import("office-addin-dev-certs");
-  const httpsOptions = await devCerts.getHttpsServerOptions();
+export default defineConfig(async (): Promise<UserConfig> => {
+  let httpsOptions;
+  if (process.env.NODE_ENV !== 'production') {
+    const devCerts = await import("office-addin-dev-certs");
+    httpsOptions = await devCerts.getHttpsServerOptions();
+  }
   
   const isGoogle = process.env.GOOGLE === "true";
 
@@ -22,7 +25,7 @@ export default defineConfig(async () => {
       {
         name: "rewrite-middleware",
         configureServer(server: ViteDevServer) {
-          server.middlewares.use((req, res, next) => {
+          server.middlewares.use((req, _res, next) => {
             if (!req.url) return next();
             
             const [path, query] = req.url.split('?');
