@@ -177,19 +177,24 @@ export function App() {
     let cancelled = false;
     let lastHint = "";
 
-    const refresh = () => {
-      void documentHost.captureSelection()
-        .then((sel: Selection | null) => {
-          if (cancelled) return;
-          const hint = sel ? describeAnchor(sel.anchor) : "";
-          setSelectionHint(hint);
+    let debounceTimeout: ReturnType<typeof setTimeout>;
 
-          if (hint && hint !== lastHint) {
-            setUseSelection(true);
-          }
-          lastHint = hint;
-        })
-        .catch(() => setSelectionHint(""));
+    const refresh = () => {
+      clearTimeout(debounceTimeout);
+      debounceTimeout = setTimeout(() => {
+        void documentHost.captureSelection()
+          .then((sel: Selection | null) => {
+            if (cancelled) return;
+            const hint = sel ? describeAnchor(sel.anchor) : "";
+            setSelectionHint(hint);
+
+            if (hint && hint !== lastHint) {
+              setUseSelection(true);
+            }
+            lastHint = hint;
+          })
+          .catch(() => setSelectionHint(""));
+      }, 300);
     };
 
     refresh();
@@ -211,6 +216,7 @@ export function App() {
 
     return () => {
       cancelled = true;
+      if (debounceTimeout) clearTimeout(debounceTimeout);
       if (interval) clearInterval(interval);
       if (!host.startsWith("Google")) {
         try {
