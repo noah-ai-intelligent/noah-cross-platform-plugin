@@ -7,7 +7,6 @@ export function WelcomeScreen({
   subtitle: string;
   children?: React.ReactNode;
 }) {
-  // Parse account email if subtitle starts with "Signed in as"
   const isSigned = subtitle.startsWith("Signed in as ");
   let email = "";
 
@@ -21,19 +20,16 @@ export function WelcomeScreen({
 
   return (
     <div className="h-full flex flex-col items-center justify-center text-center py-10 px-6 animate-fadeIn">
-      {/* Main Title */}
       <h2 className="text-[20px] font-bold text-ink tracking-tight m-0 mb-2">
         Noah, right in your workbook
       </h2>
 
-      {/* Email Pill (No green dot) */}
       {displayEmail ? (
         <div className="inline-flex items-center px-3 py-1 rounded-full bg-surface border border-border text-[12px] text-ink-secondary font-medium mb-3 shadow-2xs">
           {displayEmail}
         </div>
       ) : null}
 
-      {/* Descriptive Subtitle (after email) */}
       <p className="text-[13px] text-ink-muted m-0 max-w-[280px]">
         Ask questions, analyze data, and generate insights instantly.
       </p>
