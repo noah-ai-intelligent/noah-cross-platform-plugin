@@ -368,22 +368,30 @@ export function App() {
       setLatestAnswer(answer);
 
       const assistantMsgId = (Date.now() + 1).toString();
+      let baseText = answer.markdown || answer.prose || "";
+      if (answer.tables && answer.tables.length > 0 && answer.markdown) {
+        baseText = answer.markdown.split('\n').filter(line => !/^\s*\|.*\|\s*$/.test(line)).join('\n').trim();
+      }
       setMessages(prev => [
         ...prev,
-        { id: assistantMsgId, role: "assistant", content: [{ type: "text", text: answer.markdown || answer.prose || "" }] }
+        { id: assistantMsgId, role: "assistant", content: [{ type: "text", text: baseText }] }
       ]);
 
       let insertedCount = 0;
+      let insertedDetails: string[] = [];
       if (answer.tables && answer.tables.length > 0) {
         for (const table of answer.tables) {
-          if (host === "Excel" || host === "Word" || host === "PowerPoint") {
-            try {
-              if (table.chart_type) await handleInsertChart(table);
-              else await handleInsertTable(table, answer.intent?.is_update ?? false);
+          try {
+            if (table.chart_type) {
+              await handleInsertChart(table);
               insertedCount++;
-            } catch (e) {
-              console.error("Failed to insert table:", e);
+            } else {
+              const res = await handleInsertTable(table, answer.intent?.is_update ?? false);
+              insertedCount++;
+              if (res && res.address) insertedDetails.push(res.address);
             }
+          } catch (e) {
+            console.error("Failed to insert table:", e);
           }
         }
       }
@@ -392,9 +400,13 @@ export function App() {
         setMessages(prev => prev.map(msg => {
           if (msg.id === assistantMsgId) {
             const currentText = (msg.content[0] as any).text;
+            let suffix = `*Inserted ${insertedCount} item(s) directly into your document.*`;
+            if (insertedDetails.length > 0) {
+                suffix = `*Inserted ${insertedCount} item(s) directly into your document at ${insertedDetails.join(", ")}.*`;
+            }
             const newText = currentText 
-              ? `${currentText}\n\n*Inserted ${insertedCount} item(s) directly into your document.*` 
-              : `*Inserted ${insertedCount} item(s) directly into your document.*`;
+              ? `${currentText}\n\n${suffix}` 
+              : suffix;
             return { ...msg, content: [{ type: "text", text: newText }] };
           }
           return msg;
@@ -459,13 +471,15 @@ export function App() {
     setBusy(true);
     setError(null);
     try {
-      if (host === "PowerPoint") {
+      if (host === "PowerPoint" || host === "GoogleSlides") {
         await documentHost.insertImageBase64(await renderTableImageBase64(table));
       } else {
-        await documentHost.insertTable(table, isUpdate);
+        const res = await documentHost.insertTable(table, isUpdate);
+        return res;
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not insert the table.");
+      throw e;
     } finally {
       setBusy(false);
     }
