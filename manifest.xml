@@ -19,18 +19,18 @@
     xmlns:ov="http://schemas.microsoft.com/office/taskpaneappversionoverrides"
     xsi:type="TaskPaneApp">
 
-  <Id>00000000-0000-0000-0000-000000000000</Id>
+  <Id>4BA9C69B-1E7A-43E0-AB59-290EF1B775AB</Id>
   <Version>1.0.0.0</Version>
   <ProviderName>Noah</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Noah" />
   <Description DefaultValue="Ask your organization's data a question and insert the answer — a table, a chart, or a number — straight into your document." />
-  <IconUrl DefaultValue="https://localhost:5175/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://localhost:5175/assets/icon-80.png" />
+  <IconUrl DefaultValue="https://noah-office.enpointe.io/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="https://noah-office.enpointe.io/assets/icon-80.png" />
   <SupportUrl DefaultValue="https://noah.enpointe.io/support" />
 
   <AppDomains>
-    <AppDomain>https://localhost:5175</AppDomain>
+    <AppDomain>https://noah-office.enpointe.io</AppDomain>
     <AppDomain>https://noah.enpointe.io</AppDomain>
   </AppDomains>
 
@@ -41,7 +41,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://localhost:5175/taskpane" />
+    <SourceLocation DefaultValue="https://noah-office.enpointe.io/taskpane" />
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -156,13 +156,13 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://localhost:5175/assets/icon-16.png" />
-        <bt:Image id="Icon.32x32" DefaultValue="https://localhost:5175/assets/icon-32.png" />
-        <bt:Image id="Icon.80x80" DefaultValue="https://localhost:5175/assets/icon-80.png" />
+        <bt:Image id="Icon.16x16" DefaultValue="https://noah-office.enpointe.io/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="https://noah-office.enpointe.io/assets/icon-32.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="https://noah-office.enpointe.io/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://localhost:5175/commands" />
-        <bt:Url id="Taskpane.Url" DefaultValue="https://localhost:5175/taskpane" />
+        <bt:Url id="Commands.Url" DefaultValue="https://noah-office.enpointe.io/commands" />
+        <bt:Url id="Taskpane.Url" DefaultValue="https://noah-office.enpointe.io/taskpane" />
         <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://noah.enpointe.io/support" />
       </bt:Urls>
       <bt:ShortStrings>

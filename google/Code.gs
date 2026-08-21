@@ -169,21 +169,26 @@ function createSidebarCard() {
   }
 
   var card = CardService.newCardBuilder();
-  card.setHeader(CardService.newCardHeader().setTitle("Noah Cross-Platform"));
+  card.setHeader(
+    CardService.newCardHeader()
+      .setTitle("Noah")
+      .setImageUrl("https://noah.enpointe.io/brand/logo-green.png")
+  );
   var section = CardService.newCardSection();
   
   section.addWidget(
     CardService.newTextParagraph().setText(
-      "Noah is now open in the custom sidebar!\\n\\nIf you don't see it, you can also open it from the top menu:\\nExtensions > Noah Cross Platform > Open Sidebar"
+      "Noah is ready!\n\nIf the interactive sidebar didn't open automatically, or if you closed it previously, click the button below to launch it."
     )
   );
   
-  // Provide a fallback button just in case
   var action = CardService.newAction().setFunctionName('showSidebar');
   section.addWidget(
     CardService.newTextButton()
-      .setText('Open Sidebar Manually')
+      .setText('Launch Noah')
       .setOnClickAction(action)
+      .setTextButtonStyle(CardService.TextButtonStyle.FILLED)
+      .setBackgroundColor("#0d5c63")
   );
   
   card.addSection(section);
