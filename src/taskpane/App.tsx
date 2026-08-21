@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { isSignedIn, signIn } from "../auth";
 import { clearTokens } from "../tokenStorage";
+import logoUrl from "/assets/icon-80.png";
 import {
   AddonAgent,
   AddonAnswer,
@@ -29,11 +30,10 @@ import {
   markUploaded,
   watchForChanges,
 } from "../document/documentIndex";
-import { Selection, captureSelection } from "../document/selection";
+import { Selection } from "../document/selection";
 import * as snapshotCache from "../document/snapshotCache";
-import * as word from "./officeApi/word";
-import * as excel from "./officeApi/excel";
-import * as powerpoint from "./officeApi/powerpoint";
+import { OfficeHost } from "./host/OfficeHost";
+import { GoogleHost } from "./host/GoogleHost";
 import { renderTableImageBase64 } from "./renderTableImage";
 import "../styles/tailwind.css";
 import { NoahHeader, NoahShell, NoahToolbar } from "./components/NoahShell";
@@ -79,6 +79,13 @@ async function blobToBase64(blob: Blob): Promise<string> {
 
 export function App() {
   const host = currentHost();
+  const documentHost = useMemo(() => {
+    // @ts-ignore
+    if (typeof google !== "undefined" && google.script) {
+      return new GoogleHost(host);
+    }
+    return new OfficeHost(host);
+  }, [host]);
   // const surface = surfaceFor(host);
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [me, setMe] = useState<Bootstrap | null>(null);
@@ -171,8 +178,8 @@ export function App() {
     let lastHint = "";
 
     const refresh = () => {
-      void captureSelection(host)
-        .then((sel) => {
+      void documentHost.captureSelection()
+        .then((sel: Selection | null) => {
           if (cancelled) return;
           const hint = sel ? describeAnchor(sel.anchor) : "";
           setSelectionHint(hint);
@@ -187,17 +194,32 @@ export function App() {
 
     refresh();
 
-    try {
-      window.Office?.context?.document?.addHandlerAsync(
-        window.Office?.EventType.DocumentSelectionChanged,
-        refresh
-      );
-    } catch {
-      // Older hosts don't raise it; the hint just won't live-update.
+    let interval: ReturnType<typeof setInterval> | undefined;
+
+    if (host.startsWith("Google")) {
+      interval = setInterval(refresh, 2000);
+    } else {
+      try {
+        window.Office?.context?.document?.addHandlerAsync(
+          window.Office?.EventType.DocumentSelectionChanged,
+          refresh
+        );
+      } catch {
+        // Older hosts don't raise it; the hint just won't live-update.
+      }
     }
 
     return () => {
       cancelled = true;
+      if (interval) clearInterval(interval);
+      if (!host.startsWith("Google")) {
+        try {
+          window.Office?.context?.document?.removeHandlerAsync(
+            window.Office?.EventType.DocumentSelectionChanged,
+            refresh
+          );
+        } catch {}
+      }
     };
   }, [host]);
 
@@ -262,7 +284,7 @@ export function App() {
       return { context: { ...base, scope: "none" }, selection: null };
     }
 
-    const selection = await captureSelection(host);
+    const selection = await documentHost.captureSelection();
     if (!selection) return { context: { ...base, scope: "none" }, selection: null };
 
     const known = snapshotCache.lookup(selection);
@@ -413,41 +435,8 @@ export function App() {
   /** Select the region a claim came from. The single highest-trust feature
    * here: it turns "the variance is 82,044" into something checkable. */
   async function handleCitation(citation: Citation) {
-    const { anchor } = citation;
     try {
-      if (host === "Excel" && anchor.a1_range) {
-        await Excel.run(async (ctx) => {
-          const sheet = anchor.sheet_name
-            ? ctx.workbook.worksheets.getItem(anchor.sheet_name)
-            : ctx.workbook.worksheets.getActiveWorksheet();
-          const range = sheet.getRange(anchor.a1_range!);
-          range.select();
-          await ctx.sync();
-        });
-      } else if (host === "PowerPoint" && anchor.slide_index != null) {
-        await PowerPoint.run(async (ctx) => {
-          const slides = ctx.presentation.slides;
-          slides.load("items/id");
-          await ctx.sync();
-          const target = slides.items[anchor.slide_index!];
-          if (target) {
-            ctx.presentation.setSelectedSlides([target.id]);
-            await ctx.sync();
-          }
-        });
-      } else if (host === "Word") {
-        const needle = (citation.label || "").trim().slice(0, 200);
-        if (!needle) return;
-        await Word.run(async (ctx) => {
-          const hits = ctx.document.body.search(needle, { matchCase: false });
-          hits.load("items");
-          await ctx.sync();
-          if (hits.items.length) {
-            hits.items[0].select();
-            await ctx.sync();
-          }
-        });
-      }
+      await documentHost.handleCitation(citation);
     } catch {
       setError("Couldn't jump to that — it may have moved.");
     }
@@ -463,20 +452,17 @@ export function App() {
     const fullText = textBlocks.map((b) => (b as any).text).join("\n\n");
     if (!fullText) return;
 
-    if (host === "Word") await word.insertProse(fullText);
-    else if (host === "PowerPoint") await powerpoint.insertText(fullText);
-    // Excel has no free-text "prose" location — table/chart insertion below
-    // covers Excel's use case.
+    await documentHost.insertProse(fullText);
   }
 
   async function handleInsertTable(table: XlsxTable, isUpdate: boolean = false) {
     setBusy(true);
     setError(null);
     try {
-      if (host === "Word") await word.insertTable(table);
-      else if (host === "Excel") await excel.insertTable(table, isUpdate);
-      else if (host === "PowerPoint") {
-        await powerpoint.insertImageBase64(renderTableImageBase64(table));
+      if (host === "PowerPoint") {
+        await documentHost.insertImageBase64(await renderTableImageBase64(table));
+      } else {
+        await documentHost.insertTable(table, isUpdate);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not insert the table.");
@@ -493,13 +479,14 @@ export function App() {
       if (host === "Excel") {
         // Excel builds a real native chart directly from the range it just
         // wrote — write the table first, then chart the resulting range.
-        const { address } = await excel.insertTable(table);
-        await excel.insertChart(table.chart_type, address);
+        const result = await documentHost.insertTable(table);
+        if (result && result.address) {
+          await documentHost.insertChart(table.chart_type, result.address);
+        }
       } else {
         const png = await renderChartPng(orgId, table.chart_type, table);
         const base64 = await blobToBase64(png);
-        if (host === "Word") await word.insertChartImage(base64);
-        else if (host === "PowerPoint") await powerpoint.insertImageBase64(base64);
+        await documentHost.insertImageBase64(base64);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not render the chart.");
@@ -517,13 +504,14 @@ export function App() {
   }
 
   if (!signedIn) {
-    if (typeof window !== "undefined" && (!window.Office || !window.Office.context || !window.Office.context.ui)) {
+    const isGoogle = host.startsWith("Google");
+    if (typeof window !== "undefined" && (!window.Office || !window.Office.context || !window.Office.context.ui) && !isGoogle) {
       window.location.href = "/login";
       return null;
     }
     return (
       <div className="w-full h-screen px-4 box-border bg-canvas overflow-y-auto flex flex-col justify-center items-center">
-        <img src="/assets/icon-80.png" alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
+        <img src={logoUrl} alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} />
         <LoginApp
           onSuccess={async () => {
             setSignedIn(true);

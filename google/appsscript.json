@@ -1,0 +1,50 @@
+{
+  "timeZone": "Asia/Kolkata",
+  "dependencies": {},
+  "webapp": {
+    "access": "ANYONE",
+    "executeAs": "USER_ACCESSING"
+  },
+  "exceptionLogging": "STACKDRIVER",
+  "runtimeVersion": "V8",
+  "urlFetchWhitelist": [
+    "https://noah-plugin.enpointe.io/",
+    "https://noah.enpointe.io/",
+    "https://staging.noah.enpointe.io/"
+  ],
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/script.external_request",
+    "https://www.googleapis.com/auth/script.container.ui",
+    "https://www.googleapis.com/auth/script.scriptapp",
+    "https://www.googleapis.com/auth/documents.currentonly",
+    "https://www.googleapis.com/auth/spreadsheets.currentonly",
+    "https://www.googleapis.com/auth/presentations.currentonly"
+  ],
+  "addOns": {
+    "common": {
+      "name": "Noah Cross Platform",
+      "logoUrl": "https://noah.enpointe.io/brand/logo-green.svg",
+      "layoutProperties": {
+        "primaryColor": "#0d5c63"
+      },
+      "homepageTrigger": {
+        "runFunction": "onHomepage"
+      }
+    },
+    "docs": {
+      "homepageTrigger": {
+        "runFunction": "onDocsHomepage"
+      }
+    },
+    "sheets": {
+      "homepageTrigger": {
+        "runFunction": "onSheetsHomepage"
+      }
+    },
+    "slides": {
+      "homepageTrigger": {
+        "runFunction": "onSlidesHomepage"
+      }
+    }
+  }
+}

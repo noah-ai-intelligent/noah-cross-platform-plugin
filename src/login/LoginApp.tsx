@@ -256,26 +256,14 @@ export function LoginApp({
     </svg>
   );
 
-  const inputStyle = {
-    width: "100%",
-    boxSizing: "border-box" as const,
-    height: "40px",
-    padding: "0 12px",
-    background: "transparent",
-    border: "1px solid #e4e4e7",
-    borderRadius: "8px",
-    color: "#18181b",
-    fontSize: "14px",
-    marginBottom: "12px",
-    outline: "none",
-  };
+  const inputClass = "w-full box-border h-10 px-3 bg-transparent border border-border rounded-lg text-ink text-[14px] mb-3 outline-none";
 
   const btnBaseClass = "flex items-center justify-center gap-3 w-full h-11 rounded-lg border border-border bg-canvas text-ink text-[14px] font-medium cursor-pointer transition-colors hover:bg-surface hover:border-border-strong disabled:opacity-50 disabled:cursor-not-allowed";
   const primaryBtnClass = `${btnBaseClass} !bg-ink !text-canvas !border-none mt-2 hover:!bg-black`;
 
   return (
-    <div className="bg-canvas border border-border rounded-xl w-full max-w-[400px] overflow-hidden px-4">
-      <div className="relative pt-10 px-8 pb-4 text-center">
+    <div className="bg-canvas border border-border rounded-xl w-full max-w-[400px] overflow-hidden">
+      <div className="relative p-4 text-center">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 w-12 bg-accent"></div>
         <h1 className="text-[20px] font-semibold m-0">Sign in</h1>
         <p className="text-ink-muted text-[14px] mt-1 mb-0">Just one question away from your data.</p>
@@ -283,7 +271,7 @@ export function LoginApp({
 
       <div className="p-4 pt-4 px-8 pb-8 flex flex-col gap-2">
         {step === "email" && (
-          <form onSubmit={requestOtp} style={{ display: 'flex', flexDirection: 'column' }}>
+          <form onSubmit={requestOtp} className="flex flex-col">
             <input
               type="email"
               placeholder="you@company.com"
@@ -291,15 +279,20 @@ export function LoginApp({
               onChange={(e) => setEmail(e.target.value)}
               required
               disabled={submitting}
-              style={inputStyle}
+              className={inputClass}
             />
 
             {captchaRequired && (
-              <div style={{ marginBottom: "12px" }}>
-                <div style={{ fontSize: "12px", color: "var(--ink-muted)", marginBottom: "4px", textTransform: "uppercase" }}>Verify you're human</div>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                  <div style={{ height: "40px", width: "120px", background: "var(--border)", borderRadius: "8px", overflow: "hidden" }}>
-                    {captcha ? <img src={captcha.image} alt="captcha" style={{ height: "100%", width: "100%", objectFit: "contain" }} /> : null}
+              <div className="mb-3">
+                <div className="text-[12px] text-ink-muted mb-1 uppercase">Verify you're human</div>
+                <div className="flex flex-col gap-2">
+                  <div className="flex gap-2 items-center">
+                    <div className="h-10 w-[120px] bg-border rounded-lg overflow-hidden">
+                      {captcha ? <img src={captcha.image} alt="captcha" className="h-full w-full object-contain" /> : null}
+                    </div>
+                    <button type="button" onClick={loadCaptcha} className="bg-transparent border border-zinc-200 rounded-lg px-3 h-10 cursor-pointer text-[12px] text-ink-secondary">
+                      Refresh
+                    </button>
                   </div>
                   <input
                     type="text"
@@ -307,66 +300,66 @@ export function LoginApp({
                     value={captchaAnswer}
                     onChange={(e) => setCaptchaAnswer(e.target.value)}
                     required
-                    style={{ ...inputStyle, marginBottom: 0, flex: 1 }}
+                    className={`${inputClass} !mb-0 w-full`}
                   />
                 </div>
               </div>
             )}
 
-            {error && <div style={{ color: "var(--danger)", fontSize: "13px", marginBottom: "12px" }}>{error}</div>}
+            {error && <div className="text-danger text-[13px] mb-3">{error}</div>}
 
             <button type="submit" disabled={submitting} className={primaryBtnClass}>
               {submitting ? "Sending..." : "Send one-time code"}
             </button>
 
-            <div style={{ display: 'flex', alignItems: 'center', margin: '20px 0' }}>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
-              <span style={{ fontSize: '12px', color: 'var(--ink-muted)', padding: '0 8px' }}>or with SSO</span>
-              <div style={{ flex: 1, height: '1px', background: 'var(--border)' }}></div>
+            <div className="flex items-center my-5">
+              <div className="flex-1 h-px bg-border"></div>
+              <span className="text-[12px] text-ink-muted px-2">or with SSO</span>
+              <div className="flex-1 h-px bg-border"></div>
             </div>
 
-            <button type="button" onClick={() => startSso("google")} disabled={submitting} className={btnBaseClass}>
-              <GoogleIcon /> Continue with Google
+            <button type="button" onClick={() => startSso("google")} disabled={submitting} className={`${btnBaseClass} px-4 text-[#3c4043] border-[#dadce0] bg-white`}>
+              <GoogleIcon /> <span className="flex-1 text-center pr-[18px]">Continue with Google</span>
             </button>
-            <div style={{ height: "8px" }}></div>
-            <button type="button" onClick={() => startSso("microsoft")} disabled={submitting} className={btnBaseClass}>
-              <MicrosoftIcon /> Continue with Microsoft
+            <div className="h-3"></div>
+            <button type="button" onClick={() => startSso("microsoft")} disabled={submitting} className={`${btnBaseClass} px-4 text-[#5e5e5e] border-[#8c8c8c] bg-white`}>
+              <MicrosoftIcon /> <span className="flex-1 text-center pr-[18px]">Continue with Microsoft</span>
             </button>
           </form>
         )}
 
         {step === "code" && (
-          <form onSubmit={verifyOtp} style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: "13px", color: "var(--ink-muted)", marginBottom: "12px" }}>
-              Code sent to <strong>{email}</strong>
+          <form onSubmit={verifyOtp} className="flex flex-col">
+            <div className="text-[14px] text-ink-muted mb-5 text-center leading-relaxed">
+              Code sent to <strong className="text-ink">{email}</strong>
               <div
-                style={{ color: "var(--emerald)", cursor: "pointer", marginTop: "4px", display: "inline-block", marginLeft: "8px" }}
+                className="text-emerald cursor-pointer mt-1 text-[13px] font-medium"
                 onClick={() => setStep("email")}
               >
-                (Change)
+                Change email address
               </div>
             </div>
 
             <input
               type="text"
-              placeholder="6-digit code"
+              placeholder="000000"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
+              onChange={(e) => setCode(e.target.value.replace(/[^0-9a-zA-Z]/g, ''))}
               required
               disabled={submitting}
               maxLength={6}
-              style={{ ...inputStyle, letterSpacing: "4px", textAlign: "center", fontSize: "18px" }}
+              className={`${inputClass} tracking-[16px] pl-[28px] text-center text-[24px] !h-14 font-semibold font-mono`}
             />
 
-            {error && <div style={{ color: "var(--danger)", fontSize: "13px", marginBottom: "12px" }}>{error}</div>}
+            {error && <div className="text-danger text-[13px] mb-3 text-center">{error}</div>}
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-              <span style={{ fontSize: "12px", color: "var(--ink-muted)" }}>Check your inbox</span>
+            <div className="text-[13px] text-ink-muted mb-5 text-center">
+              Check your inbox. <span className="ml-[2px]"></span>
               <button
                 type="button"
                 onClick={() => requestOtp()}
                 disabled={resendIn > 0 || submitting}
-                style={{ width: "auto", height: "auto", border: "none", background: "none", color: resendIn > 0 ? "var(--ink-muted)" : "var(--emerald)", fontSize: "12px", padding: 0 }}
+                className={`border-none bg-transparent text-[13px] p-0 font-medium ${resendIn > 0 ? "text-ink-muted cursor-default" : "text-emerald cursor-pointer"}`}
               >
                 {resendIn > 0 ? `Resend in ${resendIn}s` : "Resend code"}
               </button>
@@ -379,16 +372,16 @@ export function LoginApp({
         )}
 
         {step === "org" && (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontSize: "14px", color: "var(--ink-muted)", marginBottom: "16px" }}>
+          <div className="flex flex-col">
+            <div className="text-[14px] text-ink-muted mb-4">
               Your account belongs to multiple organizations. Pick the one you want to work in.
             </div>
 
-            <label style={{ fontSize: "12px", color: "var(--ink-muted)", marginBottom: "4px", fontWeight: "600" }}>Organization</label>
+            <label className="text-[12px] text-ink-muted mb-1 font-semibold">Organization</label>
             <select
               value={selectedOrg}
               onChange={(e) => setSelectedOrg(e.target.value)}
-              style={{ ...inputStyle, padding: "8px", appearance: "auto" }}
+              className={`${inputClass} p-2 appearance-auto`}
             >
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>

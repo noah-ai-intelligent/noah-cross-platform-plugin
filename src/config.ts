@@ -2,11 +2,13 @@
  * set these via `.env.production` / `.env.development` (not committed), same
  * convention as noah-frontend-v2. */
 
+import { currentHost } from "./document/capabilities";
+
 export const API_BASE_URL: string =
   (import.meta.env.VITE_NOAH_API_URL as string | undefined) ??
   "https://noah.enpointe.io/api/v1";
 
-export const CLIENT_PLATFORM = "office_addin";
+export const CLIENT_PLATFORM = currentHost().startsWith("Google") ? "google_addon" : "office_addin";
 
 /** This add-in's own hosted callback page — must be registered as an
  * Authorized Redirect URI on both the Google OAuth client and the

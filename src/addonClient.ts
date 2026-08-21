@@ -148,7 +148,7 @@ export function listAgents(orgId: string): Promise<AddonAgent[]> {
 export function putSnapshot(
   orgId: string,
   document: DocumentRef,
-  scope: DocumentContext["scope"],
+  _scope: DocumentContext["scope"],
   selection: Selection
 ): Promise<{ context_id: string; notes: string[] }> {
   const payload = {

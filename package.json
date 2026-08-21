@@ -7,6 +7,8 @@
     "dev": "office-addin-debugging start manifest.xml",
     "dev-server": "vite",
     "build": "tsc -b && vite build",
+    "build:google": "tsc -b && GOOGLE=true vite build",
+    "deploy:google": "npm run build:google && cp dist/src/taskpane/index.html google/index.html && cd google && clasp push",
     "preview": "vite preview",
     "validate": "office-addin-manifest validate manifest.xml",
     "sideload": "office-addin-debugging start manifest.xml desktop",
@@ -18,6 +20,7 @@
     "react-markdown": "^10.1.0"
   },
   "devDependencies": {
+    "@google/clasp": "^3.3.0",
     "@types/office-js": "^1.0.470",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",

@@ -33,9 +33,25 @@ const safeRenderApp = () => {
   renderApp();
 };
 
-if (window.Office) {
-  Office.onReady(() => safeRenderApp());
-  setTimeout(safeRenderApp, 1000);
-} else {
-  safeRenderApp();
+const startApp = () => {
+  if (document.getElementById("root")) {
+    safeRenderApp();
+  } else {
+    document.addEventListener("DOMContentLoaded", safeRenderApp);
+  }
+};
+
+try {
+  // @ts-ignore
+  if (window.__GOOGLE_HOST__) {
+    startApp();
+  } else if (window.Office && window.Office.onReady) {
+    window.Office.onReady(() => startApp());
+    setTimeout(startApp, 1000);
+  } else {
+    startApp();
+  }
+} catch (e) {
+  console.error("Initialization error:", e);
+  startApp();
 }

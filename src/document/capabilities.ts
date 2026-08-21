@@ -32,9 +32,18 @@ export type Capability =
   | "trace_precedents"
   | "trace_dependents";
 
-export type Host = "Word" | "Excel" | "PowerPoint" | "Unknown";
+export type Host = "Word" | "Excel" | "PowerPoint" | "GoogleSheets" | "GoogleDocs" | "GoogleSlides" | "Unknown";
 
 export function currentHost(): Host {
+  // @ts-ignore
+  if (typeof window !== "undefined" && window.__GOOGLE_HOST__ && !window.__GOOGLE_HOST__.startsWith("<?")) {
+    // @ts-ignore
+    return window.__GOOGLE_HOST__ as Host;
+  }
+  // @ts-ignore
+  if (typeof google !== "undefined" && google.script) {
+    return "GoogleSheets"; // fallback
+  }
   const h = window.Office?.context?.host;
   if (h === window.Office?.HostType.Word) return "Word";
   if (h === window.Office?.HostType.Excel) return "Excel";
@@ -46,10 +55,13 @@ export function currentHost(): Host {
 export function hostKey(host: Host = currentHost()): string {
   switch (host) {
     case "Word":
+    case "GoogleDocs":
       return "docs";
     case "Excel":
+    case "GoogleSheets":
       return "sheets";
     case "PowerPoint":
+    case "GoogleSlides":
       return "slides";
     default:
       return "sheets";
@@ -69,28 +81,28 @@ function supports(set: string, version: string): boolean {
 export function capabilities(host: Host = currentHost()): Capability[] {
   const caps: Capability[] = ["read_selection"];
 
-  if (host === "Excel") {
+  if (host === "Excel" || host === "GoogleSheets") {
     caps.push("read_range", "list_sheets");
-    if (supports("ExcelApi", "1.4")) caps.push("read_named_ranges");
-    if (supports("ExcelApi", "1.2")) caps.push("read_tables");
+    if (host === "GoogleSheets" || supports("ExcelApi", "1.4")) caps.push("read_named_ranges");
+    if (host === "GoogleSheets" || supports("ExcelApi", "1.2")) caps.push("read_tables");
     // getDirectPrecedents / getDirectDependents. This is the whole of our
     // formula-tracing story: Apps Script has no equivalent, which is why
     // Sheets tracing is cut from v1 (delivery plan, D5).
-    if (supports("ExcelApi", "1.15")) {
+    if (host === "Excel" && supports("ExcelApi", "1.15")) {
       caps.push("trace_precedents", "trace_dependents");
     }
   }
 
-  if (host === "Word") {
+  if (host === "Word" || host === "GoogleDocs") {
     caps.push("read_document_outline", "read_document_text");
-    if (supports("WordApi", "1.3")) caps.push("search_document");
+    if (host === "Word" && supports("WordApi", "1.3")) caps.push("search_document");
   }
 
-  if (host === "PowerPoint") {
+  if (host === "PowerPoint" || host === "GoogleSlides") {
     caps.push("list_slides");
     // Reading one slide's body and speaker notes needs the richer shape API;
     // below it we can enumerate slides but not read into them.
-    if (supports("PowerPointApi", "1.3")) caps.push("read_slide");
+    if (host === "PowerPoint" && supports("PowerPointApi", "1.3")) caps.push("read_slide");
   }
 
   return caps;
