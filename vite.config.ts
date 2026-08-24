@@ -47,7 +47,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
       port: 5175,
       https: httpsOptions,
     },
-    build: {
+    build: { target: "es2015",
       rollupOptions: {
         input: isGoogle
           ? {

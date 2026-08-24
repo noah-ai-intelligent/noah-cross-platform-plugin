@@ -4,7 +4,7 @@ import { request } from "../api";
 import { saveTokens } from "../tokenStorage";
 import type { TokenPair } from "../tokenStorage";
 import { isSignedIn } from "../auth";
-import logoUrl from "/assets/icon-80.png";
+import logoUrl from "../assets/icon-80.png";
 import "../styles/tailwind.css";
 
 type Step = "email" | "code" | "org";

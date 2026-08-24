@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import logoUrl from "/assets/icon-80.png";
+import logoUrl from "../../assets/icon-80.png";
 
 export function NoahShell({ children }: { children: ReactNode }) {
   return <div className="flex flex-col h-screen w-full min-w-0 max-w-full overflow-hidden relative select-none">{children}</div>;
