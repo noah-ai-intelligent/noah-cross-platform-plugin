@@ -33,16 +33,30 @@ function insertTableInGoogle(table, isUpdate) {
   var sheet = SpreadsheetApp.getActiveSheet();
   var startRow = sheet.getActiveCell().getRow();
   var startCol = sheet.getActiveCell().getColumn();
+  var numCols = table.columns.length;
   
-  var headerRange = sheet.getRange(startRow, startCol, 1, table.columns.length);
+  var headerRange = sheet.getRange(startRow, startCol, 1, numCols);
   headerRange.setValues([table.columns]);
   
+  // Apply premium styling to the header
+  headerRange.setBackground("#0d5c63");
+  headerRange.setFontColor("#ffffff");
+  headerRange.setFontWeight("bold");
+  headerRange.setHorizontalAlignment("center");
+  
+  var totalRows = 1;
   if (table.rows && table.rows.length > 0) {
-    var dataRange = sheet.getRange(startRow + 1, startCol, table.rows.length, table.columns.length);
+    var dataRange = sheet.getRange(startRow + 1, startCol, table.rows.length, numCols);
     dataRange.setValues(table.rows);
+    totalRows += table.rows.length;
   }
   
-  return { address: sheet.getRange(startRow, startCol, table.rows.length + 1, table.columns.length).getA1Notation() };
+  // Apply borders to the entire table and auto-resize columns
+  var fullRange = sheet.getRange(startRow, startCol, totalRows, numCols);
+  fullRange.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+  sheet.autoResizeColumns(startCol, numCols);
+  
+  return { address: fullRange.getA1Notation() };
 }
 
 function insertChartInGoogle(chartType, rangeAddress) {
