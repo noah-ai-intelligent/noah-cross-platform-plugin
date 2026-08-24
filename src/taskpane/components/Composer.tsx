@@ -11,17 +11,30 @@ export function SendButton({
   onSend: () => void;
   onStop: () => void;
 }) {
-  const btnClass = "flex-none w-[30px] h-[30px] rounded-full border-none inline-flex items-center justify-center cursor-pointer bg-ink text-canvas disabled:bg-disabled-bg disabled:text-disabled-ink disabled:cursor-not-allowed";
-
   if (busy) {
     return (
-      <button className={btnClass} onClick={onStop} aria-label="Stop">
+      <button
+        className="flex-none w-[32px] h-[32px] rounded-full border-none inline-flex items-center justify-center cursor-pointer bg-red-500 hover:bg-red-600 text-white transition-all shadow-xs active:scale-95 animate-pulse"
+        onClick={onStop}
+        aria-label="Stop generating"
+        title="Stop response generation"
+      >
         <StopIcon />
       </button>
     );
   }
   return (
-    <button className={btnClass} disabled={disabled} onClick={onSend} aria-label="Send">
+    <button
+      className={`flex-none w-[32px] h-[32px] rounded-full border-none inline-flex items-center justify-center cursor-pointer transition-all shadow-xs ${
+        disabled
+          ? "bg-zinc-100 text-zinc-300 cursor-not-allowed"
+          : "bg-emerald-600 hover:bg-emerald-700 text-white active:scale-95 hover:shadow-md"
+      }`}
+      disabled={disabled}
+      onClick={onSend}
+      aria-label="Send message"
+      title="Send message"
+    >
       <SendIcon />
     </button>
   );
@@ -51,14 +64,14 @@ export function Composer({
   const canSend = value.trim().length > 0;
 
   return (
-    <div className="flex-none border-t border-border py-3 px-2">
-      <div className="flex flex-col border border-border rounded-[14px] bg-canvas focus-within:border-ink transition-colors overflow-hidden">
+    <div className="flex-none bg-surface/80 backdrop-blur-xs border-t border-zinc-200/60 p-2.5">
+      <div className="flex flex-col border border-zinc-200/90 rounded-2xl bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 shadow-xs focus-within:shadow-md transition-all overflow-hidden">
         {showSelectionToggle && (
           <SelectedContext enabled={useSelection} onToggle={onToggleSelection} hint={selectionHint} />
         )}
-        <div className="flex items-end gap-2 p-2 min-h-[44px]">
+        <div className="flex items-end gap-2 p-2.5 min-h-[46px]">
           <textarea
-            className="flex-1 border-none outline-none resize-none bg-transparent text-ink text-[13px] leading-normal max-h-[120px] py-1 px-0.5"
+            className="flex-1 border-none outline-none resize-none bg-transparent text-zinc-800 text-[13px] leading-relaxed max-h-[120px] py-1 px-1 placeholder:text-zinc-400"
             rows={2}
             placeholder="Ask NoahAI for help, or describe what you want to do…"
             value={value}
@@ -79,14 +92,9 @@ export function Composer({
 
 function SendIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-      <path
-        d="M8 13V3M8 3L3.5 7.5M8 3l4.5 4.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="19" x2="12" y2="5"></line>
+      <polyline points="5 12 12 5 19 12"></polyline>
     </svg>
   );
 }
@@ -94,7 +102,8 @@ function SendIcon() {
 function StopIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-      <rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor" />
+      <rect x="3.5" y="3.5" width="9" height="9" rx="1.5" fill="currentColor" />
     </svg>
   );
 }
+

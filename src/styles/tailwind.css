@@ -4,16 +4,39 @@
 
 @layer base {
   body {
-    @apply bg-canvas text-ink text-[13px] leading-normal antialiased;
-    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    @apply bg-surface/50 text-ink text-[13px] leading-relaxed antialiased;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  /* Custom subtle scrollbar */
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
   }
 }
 
 @keyframes dotBounce {
-  0%, 80%, 100% {
+
+  0%,
+  80%,
+  100% {
     transform: translateY(0) scale(0.85);
     opacity: 0.3;
   }
+
   40% {
     transform: translateY(-4px) scale(1.2);
     opacity: 1;
@@ -21,43 +44,218 @@
 }
 
 @keyframes shimmerText {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.08); }
+
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .animate-fadeIn {
-  animation: fadeIn 0.25s ease-out forwards;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 3s linear infinite;
 }
 
 .animate-dot-1 {
   animation: dotBounce 1.4s infinite ease-in-out 0s;
 }
+
 .animate-dot-2 {
   animation: dotBounce 1.4s infinite ease-in-out 0.2s;
 }
+
 .animate-dot-3 {
   animation: dotBounce 1.4s infinite ease-in-out 0.4s;
 }
 
 .animate-shimmer-text {
-  background: linear-gradient(90deg, #71717a 0%, #18181b 50%, #71717a 100%);
+  background: linear-gradient(90deg, #10b981 0%, #059669 25%, #14b8a6 50%, #059669 75%, #10b981 100%);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: shimmerText 2.2s infinite linear;
+  animation: shimmerText 2.5s infinite linear;
 }
 
 .animate-pulse-glow {
   animation: pulseGlow 2s infinite ease-in-out;
 }
 
+/* Markdown styling inside Noah assistant responses */
+.prose-noah {
+  color: #18181b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.prose-noah p {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.prose-noah p:last-child {
+  margin-bottom: 0;
+}
+
+.prose-noah h1,
+.prose-noah h2,
+.prose-noah h3,
+.prose-noah h4 {
+  font-weight: 600;
+  color: #09090b;
+  margin-top: 0.75rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.3;
+}
+
+.prose-noah h1 {
+  font-size: 1.1rem;
+}
+
+.prose-noah h2 {
+  font-size: 1rem;
+}
+
+.prose-noah h3 {
+  font-size: 0.925rem;
+}
+
+.prose-noah ul,
+.prose-noah ol {
+  margin-top: 0.25rem;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+}
+
+.prose-noah ul {
+  list-style-type: disc;
+}
+
+.prose-noah ol {
+  list-style-type: decimal;
+}
+
+.prose-noah li {
+  margin-bottom: 0.2rem;
+}
+
+.prose-noah code {
+  background-color: #f4f4f5;
+  color: #047857;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.85em;
+  border: 1px solid #e4e4e7;
+}
+
+.prose-noah pre {
+  background-color: #18181b;
+  color: #f4f4f5;
+  padding: 0.65rem 0.85rem;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-noah pre code {
+  background-color: transparent;
+  color: inherit;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  font-size: 0.85em;
+}
+
+.prose-noah blockquote {
+  border-left: 3px solid #10b981;
+  padding-left: 0.75rem;
+  color: #52525b;
+  font-style: italic;
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-noah table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-top: 0.6rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85em;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  border: 1px solid #e4e4e7;
+}
+
+.prose-noah th,
+.prose-noah td {
+  border-bottom: 1px solid #e4e4e7;
+  border-right: 1px solid #e4e4e7;
+  padding: 0.45rem 0.65rem;
+  text-align: left;
+}
+
+.prose-noah th:last-child,
+.prose-noah td:last-child {
+  border-right: none;
+}
+
+.prose-noah tr:last-child td {
+  border-bottom: none;
+}
+
+.prose-noah th {
+  background-color: #f4f4f5;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.prose-noah tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+.prose-noah tbody tr:hover {
+  background-color: #f0fdf4;
+}

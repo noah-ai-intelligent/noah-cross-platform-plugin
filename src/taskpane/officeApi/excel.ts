@@ -6,6 +6,15 @@ import type { XlsxTable } from "../../chatClient";
 
 // CHART_TYPE_MAP removed from top level to avoid crash outside Excel host
 
+/** Writes text directly into the selected cell/range in Excel. */
+export async function insertProse(text: string): Promise<void> {
+  return Excel.run(async (context) => {
+    const range = context.workbook.getSelectedRange();
+    range.values = [[text]];
+    await context.sync();
+  });
+}
+
 /** Writes the table starting at the active cell and formats it as a native
  * Excel Table (sortable/filterable, matches the header styling). Returns the
  * written range so a chart request can build straight off it. */
@@ -59,11 +68,18 @@ export async function insertTable(
     await context.sync();
 
     range.values = [
-      table.columns.map(String),
-      ...table.rows.map((r) => r.map((v) => (v === null ? "" : v))),
+      table.columns.map((c) => String(c).replace(/^\*\*(.*)\*\*$/, "$1").trim()),
+      ...table.rows.map((r) =>
+        r.map((v) => {
+          if (v === null || v === undefined) return "";
+          if (typeof v === "number" || typeof v === "boolean") return v;
+          return String(v).replace(/^\*\*(.*)\*\*$/, "$1").trim();
+        })
+      ),
     ];
     const excelTable = sheet.tables.add(range, true /* hasHeaders */);
     excelTable.name = `NoahTable${Date.now()}`;
+    range.format.autofitColumns();
     range.load("address");
     await context.sync();
     return { address: range.address };
