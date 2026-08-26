@@ -30,33 +30,119 @@ function showSidebar() {
 }
 
 function insertTableInGoogle(table, isUpdate) {
-  var sheet = SpreadsheetApp.getActiveSheet();
-  var startRow = sheet.getActiveCell().getRow();
-  var startCol = sheet.getActiveCell().getColumn();
   var numCols = table.columns.length;
+  var tableData = [table.columns];
   
-  var headerRange = sheet.getRange(startRow, startCol, 1, numCols);
-  headerRange.setValues([table.columns]);
-  
-  // Apply premium styling to the header
-  headerRange.setBackground("#0d5c63");
-  headerRange.setFontColor("#ffffff");
-  headerRange.setFontWeight("bold");
-  headerRange.setHorizontalAlignment("center");
-  
-  var totalRows = 1;
+  // Fix row lengths
   if (table.rows && table.rows.length > 0) {
-    var dataRange = sheet.getRange(startRow + 1, startCol, table.rows.length, numCols);
-    dataRange.setValues(table.rows);
-    totalRows += table.rows.length;
+    for (var i = 0; i < table.rows.length; i++) {
+      var row = table.rows[i];
+      if (row.length < numCols) {
+        while (row.length < numCols) row.push("");
+      } else if (row.length > numCols) {
+        row = row.slice(0, numCols);
+      }
+      tableData.push(row);
+    }
+    table.rows = tableData.slice(1);
+  } else {
+    table.rows = [];
   }
-  
-  // Apply borders to the entire table and auto-resize columns
-  var fullRange = sheet.getRange(startRow, startCol, totalRows, numCols);
-  fullRange.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
-  sheet.autoResizeColumns(startCol, numCols);
-  
-  return { address: fullRange.getA1Notation() };
+
+  try {
+    if (SpreadsheetApp.getActiveSpreadsheet()) {
+      var sheet = SpreadsheetApp.getActiveSheet();
+      var startRow = sheet.getActiveCell().getRow();
+      var startCol = sheet.getActiveCell().getColumn();
+      
+      var maxRows = sheet.getMaxRows();
+      var maxCols = sheet.getMaxColumns();
+      var neededRows = startRow + table.rows.length;
+      var neededCols = startCol + numCols - 1;
+      
+      if (neededRows > maxRows) {
+        sheet.insertRowsAfter(maxRows, neededRows - maxRows);
+      }
+      if (neededCols > maxCols) {
+        sheet.insertColumnsAfter(maxCols, neededCols - maxCols);
+      }
+
+      var headerRange = sheet.getRange(startRow, startCol, 1, numCols);
+      headerRange.setValues([table.columns]);
+      
+      // Apply premium styling to the header
+      headerRange.setBackground("#0d5c63");
+      headerRange.setFontColor("#ffffff");
+      headerRange.setFontWeight("bold");
+      headerRange.setHorizontalAlignment("center");
+      
+      var totalRows = 1;
+      if (table.rows.length > 0) {
+        var dataRange = sheet.getRange(startRow + 1, startCol, table.rows.length, numCols);
+        dataRange.setValues(table.rows);
+        totalRows += table.rows.length;
+      }
+      
+      // Apply borders to the entire table and auto-resize columns
+      var fullRange = sheet.getRange(startRow, startCol, totalRows, numCols);
+      fullRange.setBorder(true, true, true, true, true, true, "#cccccc", SpreadsheetApp.BorderStyle.SOLID);
+      sheet.autoResizeColumns(startCol, numCols);
+      
+      return { address: fullRange.getA1Notation() };
+    }
+  } catch (e) {
+    throw new Error("Sheets error: " + e.message);
+  }
+
+  try {
+    if (DocumentApp.getActiveDocument()) {
+      var doc = DocumentApp.getActiveDocument();
+      var cursor = doc.getCursor();
+      
+      var uiTable;
+      if (cursor) {
+        uiTable = cursor.insertTable(tableData);
+      } else {
+        uiTable = doc.getBody().appendTable(tableData);
+      }
+      
+      // Basic styling
+      var headerRow = uiTable.getRow(0);
+      for (var c = 0; c < numCols; c++) {
+        var cell = headerRow.getCell(c);
+        cell.setBackgroundColor("#0d5c63");
+        cell.editAsText().setForegroundColor("#ffffff");
+      }
+      
+      return { address: "" };
+    }
+  } catch (e) {
+    throw new Error("Docs error: " + e.message);
+  }
+
+  try {
+    if (SlidesApp.getActivePresentation()) {
+      var selection = SlidesApp.getActivePresentation().getSelection();
+      var slide = selection.getCurrentPage();
+      if (!slide) throw new Error("No slide selected");
+      
+      var uiTable = slide.insertTable(tableData.length, numCols);
+      for (var r = 0; r < tableData.length; r++) {
+        for (var c = 0; c < numCols; c++) {
+          uiTable.getCell(r, c).getText().setText(String(tableData[r][c]));
+          if (r === 0) {
+             uiTable.getCell(r, c).getFill().setSolidFill("#0d5c63");
+             uiTable.getCell(r, c).getText().getTextStyle().setForegroundColor("#ffffff");
+          }
+        }
+      }
+      return { address: "" };
+    }
+  } catch (e) {
+    throw new Error("Slides error: " + e.message);
+  }
+
+  throw new Error("Cannot determine active document to insert table.");
 }
 
 function insertChartInGoogle(chartType, rangeAddress) {
