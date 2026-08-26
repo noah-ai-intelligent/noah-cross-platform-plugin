@@ -28,7 +28,9 @@ export class OfficeHost implements DocumentHost {
   }
 
   async insertProse(text: string): Promise<void> {
-    if (this.hostType === "Word") {
+    if (this.hostType === "Excel") {
+      await excel.insertProse(text);
+    } else if (this.hostType === "Word") {
       await word.insertProse(text);
     } else if (this.hostType === "PowerPoint") {
       await powerpoint.insertText(text);
