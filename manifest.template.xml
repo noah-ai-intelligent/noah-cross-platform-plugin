@@ -25,13 +25,13 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="NoahAI" />
   <Description DefaultValue="Ask your organization's data a question and insert the answer — a table, a chart, or a number — straight into your document." />
-  <IconUrl DefaultValue="https://noah-office.enpointe.io/assets/icon-32.png" />
-  <HighResolutionIconUrl DefaultValue="https://noah-office.enpointe.io/assets/icon-80.png" />
-  <SupportUrl DefaultValue="https://noah.enpointe.io/support" />
+  <IconUrl DefaultValue="{{NOAH_OFFICE_URL}}/assets/icon-32.png" />
+  <HighResolutionIconUrl DefaultValue="{{NOAH_OFFICE_URL}}/assets/icon-80.png" />
+  <SupportUrl DefaultValue="{{NOAH_API_URL}}/support" />
 
   <AppDomains>
-    <AppDomain>https://noah-office.enpointe.io</AppDomain>
-    <AppDomain>https://noah.enpointe.io</AppDomain>
+    <AppDomain>{{NOAH_OFFICE_URL}}</AppDomain>
+    <AppDomain>{{NOAH_API_URL}}</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -41,7 +41,7 @@
   </Hosts>
 
   <DefaultSettings>
-    <SourceLocation DefaultValue="https://noah-office.enpointe.io/taskpane" />
+    <SourceLocation DefaultValue="{{NOAH_OFFICE_URL}}/taskpane" />
   </DefaultSettings>
 
   <Permissions>ReadWriteDocument</Permissions>
@@ -156,14 +156,14 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://noah-office.enpointe.io/assets/icon-16.png" />
-        <bt:Image id="Icon.32x32" DefaultValue="https://noah-office.enpointe.io/assets/icon-32.png" />
-        <bt:Image id="Icon.80x80" DefaultValue="https://noah-office.enpointe.io/assets/icon-80.png" />
+        <bt:Image id="Icon.16x16" DefaultValue="{{NOAH_OFFICE_URL}}/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="{{NOAH_OFFICE_URL}}/assets/icon-32.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="{{NOAH_OFFICE_URL}}/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://noah-office.enpointe.io/commands" />
-        <bt:Url id="Taskpane.Url" DefaultValue="https://noah-office.enpointe.io/taskpane" />
-        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="https://noah.enpointe.io/support" />
+        <bt:Url id="Commands.Url" DefaultValue="{{NOAH_OFFICE_URL}}/commands" />
+        <bt:Url id="Taskpane.Url" DefaultValue="{{NOAH_OFFICE_URL}}/taskpane" />
+        <bt:Url id="GetStarted.LearnMoreUrl" DefaultValue="{{NOAH_API_URL}}/support" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GetStarted.Title" DefaultValue="NoahAI is ready" />

@@ -4,13 +4,18 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/build-manifest.js development",
     "dev": "office-addin-debugging start manifest.xml",
     "dev-server": "vite",
+    "prebuild": "node scripts/build-manifest.js production",
     "build": "tsc -b && vite build",
+    "prebuild:google": "node scripts/build-manifest.js production",
     "build:google": "tsc -b && GOOGLE=true vite build",
     "deploy:google": "npm run build:google && cp dist/src/taskpane/index.html google/index.html && cd google && clasp push",
     "preview": "vite preview",
+    "prevalidate": "node scripts/build-manifest.js development",
     "validate": "office-addin-manifest validate manifest.xml",
+    "presideload": "npm run predev",
     "sideload": "office-addin-debugging start manifest.xml desktop",
     "stop": "office-addin-debugging stop manifest.xml"
   },
