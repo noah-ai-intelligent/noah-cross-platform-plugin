@@ -2,6 +2,7 @@
  * the Office Dialog API and resolves once it messages back a token pair. */
 
 import { getAccessToken, saveTokens } from "./tokenStorage";
+import { APP_BASE_URL } from "./config";
 
 export type AuthResult =
   | { status: "signed-in" }
@@ -12,15 +13,56 @@ export async function isSignedIn(): Promise<boolean> {
   return (await getAccessToken()) !== null;
 }
 
-export function signIn(): Promise<AuthResult> {
+export function signIn(provider?: string): Promise<AuthResult> {
   return new Promise((resolve) => {
+    let loginUrl = `${APP_BASE_URL}/login`;
+    if (provider) {
+      loginUrl += `?provider=${provider}`;
+    }
+
     if (!window.Office?.context?.ui) {
-      window.location.href = "/login";
-      return resolve({ status: "cancelled" });
+      const popup = window.open(
+        loginUrl,
+        "_blank",
+        "width=400,height=600"
+      );
+
+      if (!popup) {
+        return resolve({
+          status: "error",
+          message: "Popup blocked. Please allow popups for this site.",
+        });
+      }
+
+      const listener = (event: MessageEvent) => {
+        const expectedOrigin = new URL(APP_BASE_URL).origin;
+        if (event.origin !== expectedOrigin && event.origin !== window.location.origin) return;
+        try {
+          const payload = JSON.parse(event.data) as {
+            ok: boolean;
+            tokens?: { access_token: string; refresh_token: string };
+            orgId?: string;
+          };
+          if (payload.ok && payload.tokens) {
+            saveTokens(payload.tokens).then(() => {
+              if (payload.orgId) {
+                localStorage.setItem("noah_selected_org", payload.orgId);
+              }
+              window.removeEventListener("message", listener);
+              resolve({ status: "signed-in" });
+            });
+          }
+        } catch {
+          // ignore
+        }
+      };
+
+      window.addEventListener("message", listener);
+      return;
     }
 
     window.Office.context.ui.displayDialogAsync(
-      `${window.location.origin}/login`,
+      loginUrl,
       { height: 60, width: 30, promptBeforeOpen: false },
       (asyncResult) => {
         if (asyncResult.status === window.Office?.AsyncResultStatus.Failed) {

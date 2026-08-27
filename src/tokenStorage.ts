@@ -17,13 +17,6 @@ export interface TokenPair {
 }
 
 function getStorage() {
-  if (typeof OfficeRuntime !== "undefined" && OfficeRuntime.storage) {
-    return {
-      setItem: (k: string, v: string) => OfficeRuntime.storage.setItem(k, v),
-      getItem: (k: string) => OfficeRuntime.storage.getItem(k),
-      removeItem: (k: string) => OfficeRuntime.storage.removeItem(k),
-    };
-  }
   return {
     setItem: async (k: string, v: string) => localStorage.setItem(k, v),
     getItem: async (k: string) => localStorage.getItem(k),

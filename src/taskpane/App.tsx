@@ -181,8 +181,9 @@ export function App() {
       const storedOrg = localStorage.getItem("noah_selected_org");
       const first = boot.organizations.find(o => o.id === storedOrg) || boot.organizations[0];
       if (first) setOrgId(first.id);
-    } catch {
+    } catch (err: any) {
       setSignedIn(false);
+      setError("Failed to load account data. Try again or contact support. Details: " + String(err));
     }
   }
 
@@ -263,9 +264,9 @@ export function App() {
     };
   }, [host]);
 
-  async function handleSignIn() {
+  async function handleSignIn(provider?: string) {
     setError(null);
-    const result = await signIn();
+    const result = await signIn(provider);
     if (result.status === "signed-in") {
       setSignedIn(true);
     } else if (result.status === "error") {
@@ -563,8 +564,12 @@ export function App() {
       return null;
     }
     return (
-      <div className="w-full h-screen px-4 box-border bg-canvas overflow-y-auto flex flex-col justify-center items-center">
-        {/* <img src={logoUrl} alt="Noah" className="logo mb-4 h-8" onError={(e) => (e.currentTarget.style.display = 'none')} /> */}
+      <div className="w-full h-screen px-4 box-border bg-canvas overflow-y-auto flex flex-col justify-center items-center relative">
+        {error && (
+          <div className="absolute top-4 left-4 right-4 bg-danger/10 text-danger border border-danger/20 p-3 rounded-lg text-[13px]">
+            {error}
+          </div>
+        )}
         <LoginApp
           onSuccess={async () => {
             setSignedIn(true);

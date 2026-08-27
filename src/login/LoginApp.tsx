@@ -26,7 +26,7 @@ export function LoginApp({
   onSsoClick
 }: {
   onSuccess?: (tokens: TokenPair, orgId?: string) => void;
-  onSsoClick?: () => Promise<void> | void;
+  onSsoClick?: (provider: Provider) => Promise<void> | void;
 } = {}) {
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
@@ -50,20 +50,30 @@ export function LoginApp({
   const [submitting, setSubmitting] = useState(false);
   const [resendIn, setResendIn] = useState(0);
 
+  const ssoHandled = useRef(false);
+
   // Check for returning SSO redirect
   useEffect(() => {
+    if (ssoHandled.current) return;
+    
     const params = new URLSearchParams(window.location.search);
     const authCode = params.get("code");
     const state = params.get("state");
     const authError = params.get("error");
+    const providerParam = params.get("provider");
 
     if (authError) {
+      ssoHandled.current = true;
       setError(`Sign-in was cancelled or failed: ${authError}`);
       return;
     }
 
     if (authCode && state) {
+      ssoHandled.current = true;
       void completeSso(authCode, state);
+    } else if (providerParam && !onSsoClick) {
+      ssoHandled.current = true;
+      void startSso(providerParam as Provider);
     }
   }, []);
 
@@ -146,6 +156,9 @@ export function LoginApp({
       onSuccess(tokens, orgId);
     } else if (typeof Office !== "undefined" && Office.context?.ui) {
       Office.context.ui.messageParent(JSON.stringify({ ok: true, tokens, orgId }));
+    } else if (window.opener) {
+      window.opener.postMessage(JSON.stringify({ ok: true, tokens, orgId }), "*");
+      window.close();
     } else {
       // Fallback for direct browser testing
       await saveTokens(tokens);
@@ -196,7 +209,7 @@ export function LoginApp({
     if (onSsoClick) {
       try {
         setSubmitting(true);
-        await onSsoClick();
+        await onSsoClick(provider);
       } catch (err: any) {
         setError(extractErr(err));
       } finally {
@@ -207,7 +220,7 @@ export function LoginApp({
     setSubmitting(true);
     setError(null);
     try {
-      sessionStorage.setItem("noah.sso.provider", provider);
+      localStorage.setItem("noah.sso.provider", provider);
       const data = await request<{ authorization_url: string }>(`/auth/sso/${provider}/start`, {
         method: "POST",
         body: JSON.stringify({ redirect_uri: REDIRECT_URI }),
@@ -220,7 +233,7 @@ export function LoginApp({
   }
 
   async function completeSso(authCode: string, state: string) {
-    const provider = sessionStorage.getItem("noah.sso.provider") as Provider | null;
+    const provider = localStorage.getItem("noah.sso.provider") as Provider | null;
     if (!provider) {
       setError("Sign-in session expired. Try again.");
       return;
@@ -233,6 +246,7 @@ export function LoginApp({
         body: JSON.stringify({ code: authCode, state, redirect_uri: REDIRECT_URI }),
       });
       await processTokens(tokens);
+      localStorage.removeItem("noah.sso.provider");
     } catch (err: any) {
       setError(extractErr(err));
       setSubmitting(false);
