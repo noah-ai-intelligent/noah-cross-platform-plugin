@@ -154,7 +154,7 @@ export function LoginApp({
       await saveTokens(tokens);
       if (orgId) localStorage.setItem("noah_selected_org", orgId);
       onSuccess(tokens, orgId);
-    } else if (typeof Office !== "undefined" && Office.context?.ui) {
+    } else if (typeof Office !== "undefined" && Office.context?.ui && typeof Office.context.ui.messageParent === "function") {
       Office.context.ui.messageParent(JSON.stringify({ ok: true, tokens, orgId }));
     } else if (window.opener) {
       window.opener.postMessage(JSON.stringify({ ok: true, tokens, orgId }), "*");
