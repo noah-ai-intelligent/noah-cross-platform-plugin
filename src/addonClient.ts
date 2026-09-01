@@ -261,6 +261,9 @@ export interface JobState {
   answer?: AddonAnswer;
   error?: string;
   requests?: JobRequest[];
+  /** Human-readable, backend-sent progress label — e.g. "Search transactions…" —
+   * while `status` is "running". */
+  activity?: string;
 }
 
 export function askStart(

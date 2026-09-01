@@ -84,6 +84,10 @@ export async function runJob(jobId: string, options: RunOptions): Promise<JobSta
 
     if (job.status === "done" || job.status === "error") return job;
 
+    if (job.status === "running" && job.activity) {
+      options.onActivity?.(job.activity);
+    }
+
     if (job.status === "needs_context" && job.requests?.length) {
       await fulfilRequests(jobId, job.requests, options);
       // The turn is unblocked now, so go straight back to a tight poll rather

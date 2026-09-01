@@ -108,13 +108,14 @@ export function ActionBar({ children }: { children: React.ReactNode }) {
   return <div className="flex items-center gap-1.5 flex-wrap mt-2 pt-1 border-t border-zinc-100">{children}</div>;
 }
 
-export function LoadingState({ activity: _activity }: { activity: string }) {
+export function LoadingState({ activity }: { activity: string }) {
   return (
     <div className="flex flex-col gap-1 items-start my-1 animate-fadeIn">
       <div className="max-w-[85%] border border-zinc-200/80 bg-white shadow-xs rounded-2xl rounded-tl-xs px-3.5 py-2.5 flex items-center gap-1.5">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-dot-1" />
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-dot-2" />
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-dot-3" />
+        <span className="ml-1 text-xs text-zinc-500">{activity || "Thinking"}</span>
       </div>
     </div>
   );
@@ -142,6 +143,73 @@ export function UserMessage({ text }: { text: string }) {
     </div>
   );
 }
+
+export function ParsedMarkdown({ content }: { content: string }) {
+  if (!content) return null;
+
+  // Use fromCharCode to prevent Google Apps Script HtmlService from failing to parse literal '<think' in the bundle
+  const lt = String.fromCharCode(60);
+  const gt = String.fromCharCode(62);
+  const regex = new RegExp(`(${lt}(think|thought|thinking)${gt}([\\s\\S]*?)(${lt}/\\2${gt}|$))`, 'gi');
+  const parts = [];
+  let lastIdx = 0;
+  let m;
+
+  while ((m = regex.exec(content)) !== null) {
+    if (m.index > lastIdx) {
+      parts.push({ type: 'text', content: content.substring(lastIdx, m.index) });
+    }
+    parts.push({ type: 'think', tag: m[2], content: m[3] });
+    lastIdx = regex.lastIndex;
+  }
+
+  if (lastIdx < content.length) {
+    const remaining = content.substring(lastIdx);
+    if (remaining.trim()) {
+      parts.push({ type: 'text', content: remaining });
+    }
+  }
+
+  return (
+    <>
+      {parts.map((p, i) => {
+        if (p.type === 'think') {
+          // If it's the last part and doesn't have a closing tag, we assume it's streaming
+          const isStreaming = i === parts.length - 1 && !content.toLowerCase().includes(`${lt}/${(p.tag || "").toLowerCase()}${gt}`, lastIdx - 10);
+          return (
+            <details key={i} open={isStreaming} className="mb-3 border border-zinc-200/80 rounded-xl overflow-hidden group shadow-xs">
+              <summary className="px-3.5 py-2 text-[12px] font-semibold text-zinc-500 cursor-pointer select-none bg-zinc-50/80 hover:bg-zinc-100 flex items-center gap-2 transition-colors">
+                <svg className="w-3.5 h-3.5 text-zinc-400 group-open:rotate-90 transition-transform duration-200" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+                  <path d="M6 12L10 8L6 4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                {isStreaming ? "Thinking..." : "Thought Process"}
+              </summary>
+              <div className="px-4 py-3 text-[13px] text-zinc-600 bg-white border-t border-zinc-100 whitespace-pre-wrap font-serif italic leading-relaxed">
+                {p.content || <span className="animate-pulse text-zinc-400">...</span>}
+              </div>
+            </details>
+          );
+        }
+        return (
+          <ReactMarkdown
+            key={i}
+            remarkPlugins={[remarkGfm]}
+            components={{
+              table: ({ node, ...props }) => (
+                <div className="overflow-x-auto rounded-lg">
+                  <table {...props} />
+                </div>
+              ),
+            }}
+          >
+            {p.content}
+          </ReactMarkdown>
+        );
+      })}
+    </>
+  );
+}
+
 
 export function AssistantMessage({
   message,
@@ -202,7 +270,7 @@ export function AssistantMessage({
               }
               return (
                 <div key={i} className="mb-2 last:mb-0">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{block.text}</ReactMarkdown>
+                  <ParsedMarkdown content={block.text} />
                   {block.citations &&
                     block.citations.map((index) => {
                       const citation = answer.citations[index];
@@ -213,7 +281,7 @@ export function AssistantMessage({
               );
             })
           ) : (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{fullText || answer?.markdown || answer?.prose || ""}</ReactMarkdown>
+            <ParsedMarkdown content={fullText || answer?.markdown || answer?.prose || ""} />
           )}
         </div>
 
@@ -416,4 +484,4 @@ export function ConversationList({
         ))}
     </div>
   );
-}
+}
