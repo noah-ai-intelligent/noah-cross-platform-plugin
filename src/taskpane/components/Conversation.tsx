@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import React, { useMemo } from "react";
 import type { AddonAnswer, Citation, XlsxTable } from "../../addonClient";
 import type { ChatMessage } from "../../chatClient";
 import { describeAnchor } from "../../document/anchor";
@@ -144,6 +144,88 @@ export function UserMessage({ text }: { text: string }) {
   );
 }
 
+export function PaginatedTable({ children, ...props }: any) {
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const [pageSize, setPageSize] = React.useState(5);
+
+  const childrenArray = React.Children.toArray(children);
+  const thead = childrenArray.find((c: any) => c.type === "thead" || c.props?.node?.tagName === "thead");
+  const tbody = childrenArray.find((c: any) => c.type === "tbody" || c.props?.node?.tagName === "tbody");
+
+  if (!tbody) {
+    return (
+      <div className="overflow-x-auto rounded-lg">
+        <table {...props}>{children}</table>
+      </div>
+    );
+  }
+
+  const rows = React.Children.toArray((tbody as any).props.children);
+  const totalPages = Math.ceil(rows.length / pageSize);
+
+  const startIndex = (currentPage - 1) * pageSize;
+  const currentRows = rows.slice(startIndex, startIndex + pageSize);
+
+  const paginatedTbody = React.cloneElement(tbody as React.ReactElement, {}, currentRows);
+
+  return (
+    <div className="flex flex-col gap-2 my-4">
+      <div className="overflow-x-auto rounded-lg border border-zinc-200 shadow-sm">
+        <table className="w-full text-left border-collapse" {...props}>
+          {thead}
+          {paginatedTbody}
+        </table>
+      </div>
+      {rows.length > 5 && (
+        <div className="flex items-center justify-between text-[11px] text-zinc-500 bg-zinc-50 px-2 py-1.5 rounded-md border border-zinc-100">
+          <div className="flex items-center gap-1.5">
+            <span>Show</span>
+            <select
+              className="border border-zinc-200 rounded px-1 py-0.5 bg-white text-zinc-700 outline-none focus:border-emerald-400"
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            <span>entries</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+              className="disabled:opacity-30 p-1 rounded hover:bg-zinc-200/60 transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center justify-center text-zinc-600"
+              title="Previous page"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <span className="font-medium text-zinc-600 min-w-[2.5rem] text-center">
+              {currentPage} / {totalPages || 1}
+            </span>
+            <button
+              disabled={currentPage === totalPages || totalPages === 0}
+              onClick={() => setCurrentPage((p) => p + 1)}
+              className="disabled:opacity-30 p-1 rounded hover:bg-zinc-200/60 transition-colors cursor-pointer disabled:cursor-not-allowed flex items-center justify-center text-zinc-600"
+              title="Next page"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ParsedMarkdown({ content }: { content: string }) {
   if (!content) return null;
 
@@ -195,11 +277,7 @@ export function ParsedMarkdown({ content }: { content: string }) {
             key={i}
             remarkPlugins={[remarkGfm]}
             components={{
-              table: ({ node, ...props }) => (
-                <div className="overflow-x-auto rounded-lg">
-                  <table {...props} />
-                </div>
-              ),
+              table: PaginatedTable,
             }}
           >
             {p.content}
