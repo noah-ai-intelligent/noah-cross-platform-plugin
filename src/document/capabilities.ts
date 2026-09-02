@@ -85,28 +85,32 @@ function supports(set: string, version: string): boolean {
 export function capabilities(host: Host = currentHost()): Capability[] {
   const caps: Capability[] = ["read_selection"];
 
-  if (host === "Excel" || host === "GoogleSheets") {
+  // Google hosts stop at read_selection: readOps.ts has no SpreadsheetApp/
+  // DocumentApp/SlidesApp implementation for any op below, only Excel.run/
+  // Word.run/PowerPoint.run. Declaring these for Google made the agent
+  // believe it had capabilities that silently failed at call time.
+  if (host === "Excel") {
     caps.push("read_range", "list_sheets");
-    if (host === "GoogleSheets" || supports("ExcelApi", "1.4")) caps.push("read_named_ranges");
-    if (host === "GoogleSheets" || supports("ExcelApi", "1.2")) caps.push("read_tables");
+    if (supports("ExcelApi", "1.4")) caps.push("read_named_ranges");
+    if (supports("ExcelApi", "1.2")) caps.push("read_tables");
     // getDirectPrecedents / getDirectDependents. This is the whole of our
     // formula-tracing story: Apps Script has no equivalent, which is why
     // Sheets tracing is cut from v1 (delivery plan, D5).
-    if (host === "Excel" && supports("ExcelApi", "1.15")) {
+    if (supports("ExcelApi", "1.15")) {
       caps.push("trace_precedents", "trace_dependents");
     }
   }
 
-  if (host === "Word" || host === "GoogleDocs") {
+  if (host === "Word") {
     caps.push("read_document_outline", "read_document_text");
-    if (host === "Word" && supports("WordApi", "1.3")) caps.push("search_document");
+    if (supports("WordApi", "1.3")) caps.push("search_document");
   }
 
-  if (host === "PowerPoint" || host === "GoogleSlides") {
+  if (host === "PowerPoint") {
     caps.push("list_slides");
     // Reading one slide's body and speaker notes needs the richer shape API;
     // below it we can enumerate slides but not read into them.
-    if (host === "PowerPoint" && supports("PowerPointApi", "1.3")) caps.push("read_slide");
+    if (supports("PowerPointApi", "1.3")) caps.push("read_slide");
   }
 
   return caps;

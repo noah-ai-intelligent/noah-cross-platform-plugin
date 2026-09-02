@@ -1,5 +1,5 @@
-import React, { useMemo } from "react";
-import type { AddonAnswer, Citation, XlsxTable } from "../../addonClient";
+import React, { useState, useMemo } from "react";
+import type { AddonAnswer, Citation, XlsxTable, EditPlanOut } from "../../addonClient";
 import type { ChatMessage } from "../../chatClient";
 import { describeAnchor } from "../../document/anchor";
 import ReactMarkdown from 'react-markdown';
@@ -45,18 +45,15 @@ export type HistoryEntry = {
   timestamp: number;
 };
 
-export function CellReference({
-  citation,
-  onClick,
-}: {
-  citation: Citation;
-  onClick: () => void;
-}) {
+export function CellReference({ citation, onClick, disabled }: { citation: Citation; onClick?: () => void; disabled?: boolean }) {
+  if (!citation || !citation.anchor) return null;
   return (
     <button
-      className="inline-flex items-center gap-1 border border-emerald-200 bg-emerald-50/80 text-emerald-800 text-[11px] font-mono py-0.5 px-2 rounded-full cursor-pointer hover:bg-emerald-100 transition-colors shadow-2xs my-1 mr-1"
-      onClick={onClick}
-      title="Click to jump to cell reference in document"
+      className={`inline-flex items-center gap-1 min-h-[22px] px-2 rounded-full border border-zinc-200 bg-white shadow-xs text-[11px] font-medium transition-all ${disabled ? "opacity-50 cursor-not-allowed text-zinc-400" : "text-emerald-700 cursor-pointer hover:border-emerald-300 hover:shadow-sm hover:text-emerald-800"
+        }`}
+      onClick={disabled ? undefined : onClick}
+      title={disabled ? "Feature not yet available in Slides" : describeAnchor(citation.anchor)}
+      disabled={disabled}
     >
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
@@ -296,6 +293,9 @@ export function AssistantMessage({
   onInsertProse,
   onInsertTable,
   onCitation,
+  onApplyEditPlan,
+  onRejectEditPlan,
+  requiresConfirmation = true,
 }: {
   message: ChatMessage;
   answer?: AddonAnswer | null;
@@ -303,7 +303,11 @@ export function AssistantMessage({
   onInsertProse: (text: string) => void;
   onInsertTable?: (table: XlsxTable) => void;
   onCitation?: (c: Citation) => void;
+  onApplyEditPlan?: (plan: EditPlanOut) => void;
+  onRejectEditPlan?: (plan: EditPlanOut) => void;
+  requiresConfirmation?: boolean;
 }) {
+  const [insertionRejected, setInsertionRejected] = useState(false);
   const textBlocks = message.content.filter((b) => b.type === "text" && typeof b.text === "string" && b.text.trim().length > 0);
   const fullText = textBlocks.map((b) => b.text).join("\n\n");
   const targetProse = fullText || answer?.prose || "";
@@ -363,61 +367,81 @@ export function AssistantMessage({
           )}
         </div>
 
-        {hasActions && (
-          <ActionBar>
-            {host === "Excel" ? (
-              parsedTable && onInsertTable ? (
-                <button
-                  className="inline-flex items-center gap-1.5 h-[28px] px-2.5 border border-emerald-200 rounded-full bg-emerald-50 text-emerald-800 text-[12px] font-medium cursor-pointer hover:bg-emerald-100 hover:border-emerald-300 transition-colors shadow-2xs"
-                  onClick={() => onInsertTable(parsedTable)}
-                  title="Insert table directly into active worksheet"
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                    <line x1="3" y1="9" x2="21" y2="9"></line>
-                    <line x1="3" y1="15" x2="21" y2="15"></line>
-                    <line x1="9" y1="3" x2="9" y2="21"></line>
-                    <line x1="15" y1="3" x2="15" y2="21"></line>
-                  </svg>
-                  <span>Insert Table into sheet</span>
-                </button>
-              ) : null
-            ) : (
-              <>
-                {targetProse && (
-                  <button
-                    className="inline-flex items-center gap-1.5 h-[28px] px-2.5 border border-emerald-200 rounded-full bg-emerald-50 text-emerald-800 text-[12px] font-medium cursor-pointer hover:bg-emerald-100 hover:border-emerald-300 transition-colors shadow-2xs"
-                    onClick={() => onInsertProse(targetProse)}
-                    title="Insert response text into open document"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                      <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="12" y1="18" x2="12" y2="12"></line>
-                      <line x1="9" y1="15" x2="15" y2="15"></line>
-                    </svg>
-                    <span>Insert into document</span>
-                  </button>
-                )}
-                {parsedTable && onInsertTable && (
-                  <button
-                    className="inline-flex items-center gap-1.5 h-[28px] px-2.5 border border-emerald-200 rounded-full bg-emerald-50 text-emerald-800 text-[12px] font-medium cursor-pointer hover:bg-emerald-100 hover:border-emerald-300 transition-colors shadow-2xs"
-                    onClick={() => onInsertTable(parsedTable)}
-                    title="Insert table into document"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <line x1="3" y1="9" x2="21" y2="9"></line>
-                      <line x1="3" y1="15" x2="21" y2="15"></line>
-                      <line x1="9" y1="3" x2="9" y2="21"></line>
-                      <line x1="15" y1="3" x2="15" y2="21"></line>
-                    </svg>
-                    <span>Insert Table</span>
-                  </button>
-                )}
-              </>
+        {answer?.edit_plan && (
+          <div className="mt-3 border-t border-zinc-200/80 pt-3">
+            <div className="text-[13px] font-semibold text-zinc-800 mb-1 flex items-center gap-1.5">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-600">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+              Proposed Edits
+            </div>
+            {answer.edit_plan.summary && (
+              <p className="text-[12px] leading-relaxed text-zinc-600 mb-2">
+                {answer.edit_plan.summary}
+              </p>
             )}
-          </ActionBar>
+            {answer.edit_plan.steps && answer.edit_plan.steps.length > 0 && (
+              <ul className="list-disc list-inside text-[12px] leading-relaxed text-zinc-600 mb-3 space-y-1 ml-1">
+                {answer.edit_plan.steps.map((step, i) => (
+                  <li key={i}>{step}</li>
+                ))}
+              </ul>
+            )}
+            <div className="flex gap-2">
+              <button
+                className="inline-flex items-center justify-center px-3 py-1.5 border border-transparent rounded-md shadow-sm text-xs font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors cursor-pointer"
+                onClick={() => onApplyEditPlan && onApplyEditPlan(answer.edit_plan!)}
+              >
+                Apply Edits
+              </button>
+              <button
+                className="inline-flex items-center justify-center px-3 py-1.5 border border-zinc-300 rounded-md shadow-sm text-xs font-medium text-zinc-700 bg-white hover:bg-zinc-50 transition-colors cursor-pointer"
+                onClick={() => onRejectEditPlan && onRejectEditPlan(answer.edit_plan!)}
+              >
+                Reject
+              </button>
+            </div>
+          </div>
+        )}
+
+
+        {hasActions && !insertionRejected && (
+          (answer ? (answer.plan?.requires_confirmation ?? requiresConfirmation) : true) ? (
+            <ActionBar>
+              {host === "Excel" ? (
+                parsedTable && onInsertTable ? (
+                  <button
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-emerald-200 bg-emerald-50 rounded-md text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                    onClick={() => onInsertTable(parsedTable)}
+                    title="Insert table"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M12 5v14M5 12h14"></path>
+                    </svg>
+                    Insert Table into sheet
+                  </button>
+                ) : null
+              ) : (
+                <button
+                  className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-emerald-200 bg-emerald-50 rounded-md text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  onClick={() => {
+                    if (parsedTable && !targetProse.trim() && onInsertTable) {
+                      onInsertTable(parsedTable);
+                    } else if (onInsertProse && targetProse) {
+                      onInsertProse(targetProse);
+                    }
+                  }}
+                  title="Insert answer"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 5v14M5 12h14"></path>
+                  </svg>
+                  Insert into document
+                </button>
+              )}
+            </ActionBar>
+          ) : null
         )}
       </div>
     </div>
@@ -434,7 +458,10 @@ export function ConversationView({
   onInsertProse,
   onInsertTable,
   onCitation,
+  onApplyEditPlan,
+  onRejectEditPlan,
   bottomRef,
+  requiresConfirmation = true,
 }: {
   messages: ChatMessage[];
   latestAnswer?: AddonAnswer | null;
@@ -445,7 +472,10 @@ export function ConversationView({
   onInsertProse: (text: string) => void;
   onInsertTable?: (table: XlsxTable) => void;
   onCitation?: (c: Citation) => void;
+  onApplyEditPlan?: (plan: EditPlanOut) => void;
+  onRejectEditPlan?: (plan: EditPlanOut) => void;
   bottomRef?: React.RefObject<HTMLDivElement>;
+  requiresConfirmation?: boolean;
 }) {
   const displayMessages = useMemo(() => {
     const result: ChatMessage[] = [];
@@ -485,17 +515,21 @@ export function ConversationView({
     <div className="flex flex-col gap-3 p-3.5 pb-4">
       {displayMessages.map((msg, index) => {
         const isLast = index === displayMessages.length - 1;
+        const isLatest = isLast && latestAnswer && !busy;
         return msg.role === "user" ? (
           <UserMessage key={msg.id} text={msg.content[0]?.text || ""} />
         ) : (
           <AssistantMessage
             key={msg.id}
             message={msg}
-            answer={isLast && latestAnswer && !busy ? latestAnswer : null}
+            answer={isLatest ? latestAnswer : null}
             host={host}
             onInsertProse={onInsertProse}
             onInsertTable={onInsertTable}
             onCitation={onCitation}
+            onApplyEditPlan={onApplyEditPlan}
+            onRejectEditPlan={onRejectEditPlan}
+            requiresConfirmation={requiresConfirmation}
           />
         );
       })}
@@ -508,6 +542,7 @@ export function ConversationView({
           onInsertProse={onInsertProse}
           onInsertTable={onInsertTable}
           onCitation={onCitation}
+          requiresConfirmation={requiresConfirmation}
         />
       )}
 

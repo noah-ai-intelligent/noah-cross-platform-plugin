@@ -6,7 +6,7 @@
   "scripts": {
     "predev": "node scripts/build-manifest.js development",
     "dev": "office-addin-debugging start manifest.xml",
-    "dev-server": "vite",
+    "dev-server": "npm run predev && vite",
     "prebuild": "node scripts/build-manifest.js production",
     "build": "tsc -b && vite build",
     "prebuild:google": "node scripts/build-manifest.js production",

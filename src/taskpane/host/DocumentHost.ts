@@ -1,4 +1,4 @@
-import type { XlsxTable, Citation } from "../../addonClient";
+import type { XlsxTable, Citation, EditOperationOut, EditOperationReport } from "../../addonClient";
 import type { Selection } from "../../document/selection";
 
 export interface DocumentHost {
@@ -8,4 +8,7 @@ export interface DocumentHost {
   insertImageBase64(base64: string): Promise<void>;
   handleCitation(citation: Citation): Promise<void>;
   captureSelection(): Promise<Selection | null>;
+  getDocumentId(): Promise<string>;
+  getDocumentTitle(): Promise<string>;
+  applyEditOperation(op: EditOperationOut, index: number): Promise<EditOperationReport>;
 }

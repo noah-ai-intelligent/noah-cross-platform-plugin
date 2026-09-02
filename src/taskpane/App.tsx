@@ -18,6 +18,10 @@ import {
   putIndex,
   putSnapshot,
   renderChartPng,
+  EditPlanOut,
+  EditOperationReport,
+  confirmEditPlan,
+  reportEditPlan,
 } from "../addonClient";
 import { createConversation, listMessages, type ChatMessage } from "../chatClient";
 import { runJob } from "../session/jobs";
@@ -38,7 +42,7 @@ import { renderTableImageBase64 } from "./renderTableImage";
 import "../styles/tailwind.css";
 import { NoahHeader, NoahShell, NoahToolbar } from "./components/NoahShell";
 import { SkillSuggestions, WelcomeScreen } from "./components/Welcome";
-import { ConversationView } from "./components/Conversation";
+import { ConversationView, parseMarkdownTable } from "./components/Conversation";
 import { Composer } from "./components/Composer";
 import { SettingsPage } from "./components/Settings";
 import { HistoryPage } from "./components/History";
@@ -53,21 +57,7 @@ import { LoginApp } from "../login/LoginApp";
 //   return "docs";
 // }
 
-/** A stable id for the open file. Office has no document id, and
- * `window.Office?.context.document.url` is the only thing that survives a reopen — so
- * hash it rather than sending a full local path to the server. */
-function documentId(): string {
-  const url = (window.Office?.context?.document as { url?: string })?.url ?? "";
-  let hash = 0;
-  for (let i = 0; i < url.length; i++) hash = ((hash << 5) - hash + url.charCodeAt(i)) | 0;
-  return `office-${(hash >>> 0).toString(16)}`;
-}
 
-function documentTitle(): string {
-  const url = (window.Office?.context?.document as { url?: string })?.url ?? "";
-  const parts = url.split(/[\\/]/);
-  return parts[parts.length - 1] || "the open document";
-}
 
 async function blobToBase64(blob: Blob): Promise<string> {
   const buf = await blob.arrayBuffer();
@@ -93,7 +83,18 @@ export function App() {
   const [orgId, setOrgId] = useState<string>("");
   const [agents, setAgents] = useState<AddonAgent[]>([]);
   const [agentId, setAgentId] = useState<string>("");
-  const [conversationId, setConversationId] = useState<string>("");
+  const [conversationId, setConversationId] = useState<string>(() => {
+    return localStorage.getItem("noah.conversation_id") || "";
+  });
+
+  useEffect(() => {
+    if (conversationId) {
+      localStorage.setItem("noah.conversation_id", conversationId);
+    } else {
+      localStorage.removeItem("noah.conversation_id");
+    }
+  }, [conversationId]);
+
   const [question, setQuestion] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -290,10 +291,12 @@ export function App() {
     context: DocumentContext | null;
     selection: Selection | null;
   }> {
+    const docId = await documentHost.getDocumentId();
+    const docTitle = await documentHost.getDocumentTitle();
     const doc = {
       host: hostKey(host),
-      document_id: documentId(),
-      title: documentTitle(),
+      document_id: docId,
+      title: docTitle,
     };
     const base: DocumentContext = {
       document: doc,
@@ -412,48 +415,39 @@ export function App() {
       const answer = job.answer;
       setLatestAnswer(answer);
 
+      let baseText = answer.markdown || answer.prose || "";
+      if (!baseText && answer.blocks && answer.blocks.length > 0) {
+        baseText = answer.blocks.map(b => b.text).join("\n\n");
+      }
+
       const assistantMsgId = (Date.now() + 1).toString();
-      const baseText = answer.markdown || answer.prose || "";
       setMessages(prev => [
         ...prev,
         { id: assistantMsgId, role: "assistant", content: [{ type: "text", text: baseText }] }
       ]);
 
-      let insertedCount = 0;
-      let insertedDetails: string[] = [];
-      if (answer.tables && answer.tables.length > 0) {
-        for (const table of answer.tables) {
-          try {
-            if (table.chart_type) {
-              await handleInsertChart(table);
-              insertedCount++;
-            } else {
-              const res = await handleInsertTable(table, answer.intent?.is_update ?? false);
-              insertedCount++;
-              if (res && res.address) insertedDetails.push(res.address);
-            }
-          } catch (e) {
-            console.error("Failed to insert table:", e);
+      const requiresConfirmation = answer.plan?.requires_confirmation ?? me?.features?.requires_confirmation ?? true;
+      if (!requiresConfirmation) {
+        const tableFromAnswer = answer.tables && answer.tables.length > 0 ? answer.tables[0] : null;
+        const parsedTable = tableFromAnswer || parseMarkdownTable(baseText);
+        const targetProse = baseText;
+
+        if (host === "Excel" && parsedTable) {
+          void handleInsertTable(parsedTable);
+        } else if (parsedTable && !targetProse.trim()) {
+          void handleInsertTable(parsedTable);
+        } else if (targetProse.trim()) {
+          // If we have a table, we should still insert the table, not the raw prose with markdown.
+          // In docs, if we have parsedTable, we might want to insert it. Wait, the old code preferred insertProse if targetProse was non-empty.
+          if (parsedTable) {
+            void handleInsertTable(parsedTable);
+          } else {
+            void handleInsertProse(targetProse);
           }
         }
       }
 
-      if (insertedCount > 0) {
-        setMessages(prev => prev.map(msg => {
-          if (msg.id === assistantMsgId) {
-            const currentText = (msg.content[0] as any).text;
-            let suffix = `*Inserted ${insertedCount} item(s) directly into your document.*`;
-            if (insertedDetails.length > 0) {
-              suffix = `*Inserted ${insertedCount} item(s) directly into your document at ${insertedDetails.join(", ")}.*`;
-            }
-            const newText = currentText
-              ? `${currentText}\n\n${suffix}`
-              : suffix;
-            return { ...msg, content: [{ type: "text", text: newText }] };
-          }
-          return msg;
-        }));
-      }
+
     } catch (e) {
       if (!signal.cancelled) {
         setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -516,6 +510,9 @@ export function App() {
   }
 
   async function handleInsertTable(table: XlsxTable, isUpdate: boolean = false) {
+    if (table.chart_type) {
+      return await handleInsertChart(table);
+    }
     try {
       if (host === "PowerPoint" || host === "GoogleSlides") {
         await documentHost.insertImageBase64(await renderTableImageBase64(table));
@@ -639,10 +636,61 @@ export function App() {
 
   const hasExchange = busy || messages.length > 0 || !!error;
 
+  async function handleApplyEditPlan(plan: EditPlanOut) {
+    try {
+      setActivity("Confirming edit plan...");
+      await confirmEditPlan(orgId, plan.edit_plan_id);
+
+      setActivity("Applying edits...");
+      const outcomes: EditOperationReport[] = [];
+      for (let i = 0; i < plan.operations.length; i++) {
+        const op = plan.operations[i];
+        try {
+          const report = await documentHost.applyEditOperation(op, i);
+          outcomes.push(report);
+        } catch (e: any) {
+          outcomes.push({ operation_index: i, status: "conflict", reason: e.message });
+        }
+      }
+
+      setActivity("Reporting outcomes...");
+      await reportEditPlan(orgId, plan.edit_plan_id, outcomes);
+      setActivity("");
+      // Refresh messages to show the plan is no longer pending? For now just rely on the next message.
+    } catch (e: any) {
+      setError(e.message);
+      setActivity("");
+    }
+  }
+
+  async function handleRejectEditPlan(plan: EditPlanOut) {
+    try {
+      setActivity("Rejecting edits...");
+      const outcomes: EditOperationReport[] = plan.operations.map((_, i) => ({
+        operation_index: i,
+        status: "rejected",
+      }));
+      await reportEditPlan(orgId, plan.edit_plan_id, outcomes);
+      setActivity("");
+    } catch (e: any) {
+      setError(e.message);
+      setActivity("");
+    }
+  }
+
   return (
     <NoahShell>
       <NoahHeader
         title="Noah"
+        subtitle={
+          <div className="flex items-center gap-1">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            {useSelection && selectionHint ? `Reading: ${selectionHint}` : "Reading whole document"}
+          </div>
+        }
         actions={
           <>
             <button
@@ -700,7 +748,10 @@ export function App() {
               onInsertProse={handleInsertProse}
               onInsertTable={handleInsertTable}
               onCitation={handleCitation}
+              onApplyEditPlan={handleApplyEditPlan}
+              onRejectEditPlan={handleRejectEditPlan}
               bottomRef={messagesEndRef}
+              requiresConfirmation={me?.features?.requires_confirmation ?? true}
             />
           ) : (
             <WelcomeScreen subtitle={`Signed in as ${me?.email ?? ""} · ${host}`}>
@@ -741,7 +792,7 @@ export function App() {
         onSend={handleAsk}
         onStop={handleStop}
         busy={busy}
-        showSelectionToggle={true}
+        showSelectionToggle={host !== "PowerPoint" && host !== "GoogleSlides"}
         useSelection={useSelection}
         onToggleSelection={setUseSelection}
         selectionHint={selectionHint}
