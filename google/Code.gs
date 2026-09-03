@@ -205,33 +205,202 @@ function insertImageBase64InGoogle(base64) {
   } catch(e) {}
 }
 
+function computeSha256(text) {
+  if (!text) return "";
+  var signature = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, text, Utilities.Charset.UTF_8);
+  var hexStr = '';
+  for (var i = 0; i < signature.length; i++) {
+    var byte = signature[i];
+    if (byte < 0) byte += 256;
+    var byteStr = byte.toString(16);
+    if (byteStr.length == 1) byteStr = '0' + byteStr;
+    hexStr += byteStr;
+  }
+  return hexStr;
+}
+
 function captureSelectionInGoogle() {
   try {
     if (SpreadsheetApp.getActiveSpreadsheet()) {
-      var range = SpreadsheetApp.getActiveSheet().getActiveRange();
-      var values = range.getValues();
+      var ss = SpreadsheetApp.getActiveSpreadsheet();
+      var sheet = ss.getActiveSheet();
+      var range = sheet.getActiveRange();
+      
+      if (!range || (range.getNumRows() === 1 && range.getNumColumns() === 1 && !range.getValue())) {
+        var dataRange = sheet.getDataRange();
+        if (dataRange.getNumRows() > 1 || dataRange.getNumColumns() > 1 || String(dataRange.getValue()).trim() !== "") {
+          range = dataRange;
+        }
+      }
+      
+      var values = range.getDisplayValues();
+      var formulas = range.getFormulas();
+      var columns = [];
+      var rows = [];
+      
+      if (values && values.length > 0) {
+        columns = values[0].map(String);
+        if (values.length > 1) {
+          rows = values.slice(1).map(function(row, rIdx) {
+            return row.map(function(val, cIdx) {
+              var f = formulas[rIdx + 1] && formulas[rIdx + 1][cIdx];
+              if (f && String(f).startsWith("=")) {
+                return String(f);
+              }
+              return val;
+            });
+          });
+        }
+      }
+      
+      var rangeName = "";
+      var namedRanges = ss.getNamedRanges();
+      for (var n = 0; n < namedRanges.length; n++) {
+        var nr = namedRanges[n];
+        if (nr.getRange().getA1Notation() === range.getA1Notation() && nr.getRange().getSheet().getName() === sheet.getName()) {
+          rangeName = nr.getName();
+          break;
+        }
+      }
+      
+      var contentString = JSON.stringify(values);
       return {
-        anchor: { kind: "grid", a1_range: range.getA1Notation(), sheet_name: range.getSheet().getName() },
-        grid: { columns: [], rows: values }
+        anchor: { 
+          kind: "grid", 
+          a1_range: range.getA1Notation(), 
+          sheet_name: sheet.getName(), 
+          named_range: rangeName,
+          content_sha: computeSha256(contentString) 
+        },
+        grid: { columns: columns, rows: rows }
       };
     }
   } catch(e) {}
 
   try {
     if (DocumentApp.getActiveDocument()) {
-      var selection = DocumentApp.getActiveDocument().getSelection();
-      var text = "";
+      var doc = DocumentApp.getActiveDocument();
+      var selection = doc.getSelection();
+      var elements = [];
       if (selection) {
-        var elements = selection.getRangeElements();
+        var rangeEls = selection.getRangeElements();
+        for (var i = 0; i < rangeEls.length; i++) elements.push(rangeEls[i].getElement());
+      } else {
+        var body = doc.getBody();
+        var numChildren = body.getNumChildren();
+        for (var i = 0; i < numChildren; i++) elements.push(body.getChild(i));
+      }
+      
+      var blocks = [];
+      var fullText = "";
+      var currentHeadingPath = [];
+      
+      for (var i = 0; i < elements.length; i++) {
+        var element = elements[i];
+        if (element.getType() === DocumentApp.ElementType.PARAGRAPH) {
+          var p = element.asParagraph();
+          var text = p.getText().trim();
+          if (!text) continue;
+          
+          var heading = p.getHeading();
+          var level = 0;
+          if (heading === DocumentApp.ParagraphHeading.HEADING1) level = 1;
+          else if (heading === DocumentApp.ParagraphHeading.HEADING2) level = 2;
+          else if (heading === DocumentApp.ParagraphHeading.HEADING3) level = 3;
+          else if (heading === DocumentApp.ParagraphHeading.HEADING4) level = 4;
+          else if (heading === DocumentApp.ParagraphHeading.HEADING5) level = 5;
+          else if (heading === DocumentApp.ParagraphHeading.HEADING6) level = 6;
+          
+          if (level > 0) {
+            currentHeadingPath = currentHeadingPath.slice(0, level - 1);
+            currentHeadingPath[level - 1] = text;
+          }
+          
+          blocks.push({
+            type: (level > 0) ? "heading" : "paragraph",
+            text: text,
+            heading_path: currentHeadingPath.slice()
+          });
+          fullText += text + "\n";
+        } else if (element.editAsText) {
+           var text = element.asText().getText().trim();
+           if (text) {
+             blocks.push({ type: "paragraph", text: text, heading_path: currentHeadingPath.slice() });
+             fullText += text + "\n";
+           }
+        }
+      }
+      
+      return {
+        anchor: { kind: "text", content_sha: computeSha256(fullText) },
+        text: { blocks: blocks, char_count: fullText.length }
+      };
+    }
+  } catch(e) {}
+
+  try {
+    if (SlidesApp.getActivePresentation()) {
+      var selection = SlidesApp.getActivePresentation().getSelection();
+      var slide = null;
+      if (selection) {
+         slide = selection.getCurrentPage();
+      }
+      var slides = SlidesApp.getActivePresentation().getSlides();
+      if (!slide && slides.length > 0) {
+         slide = slides[0];
+      }
+      
+      var slideIndex = -1;
+      for (var s = 0; s < slides.length; s++) {
+        if (slides[s].getObjectId() === slide.getObjectId()) {
+          slideIndex = s;
+          break;
+        }
+      }
+      
+      var fullText = "";
+      var blocks = [];
+      if (slide) {
+        var elements = slide.getPageElements();
         for (var i = 0; i < elements.length; i++) {
-          if (elements[i].getElement().editAsText) {
-            text += elements[i].getElement().asText().getText() + "\n";
+          var el = elements[i];
+          if (el.getPageElementType() === SlidesApp.PageElementType.SHAPE) {
+            var shape = el.asShape();
+            if (shape.getText) {
+              var text = shape.getText().asString().trim();
+              if (text) {
+                blocks.push({ type: "paragraph", text: text });
+                fullText += text + "\n";
+              }
+            }
+          } else if (el.getPageElementType() === SlidesApp.PageElementType.TABLE) {
+            var table = el.asTable();
+            var rows = table.getNumRows();
+            var cols = table.getNumColumns();
+            var tableText = "";
+            for (var r = 0; r < rows; r++) {
+               var rowText = [];
+               for (var c = 0; c < cols; c++) {
+                 rowText.push(table.getCell(r, c).getText().asString().trim().replace(/\n/g, ' '));
+               }
+               tableText += "| " + rowText.join(" | ") + " |\n";
+            }
+            if (tableText) {
+               blocks.push({ type: "table", text: tableText });
+               fullText += tableText + "\n";
+            }
           }
         }
       }
+      
       return {
-        anchor: { kind: "text", content_sha: text },
-        text: { blocks: [{ type: "paragraph", text: text }], char_count: text.length }
+        anchor: { 
+          kind: "shape", 
+          slide_id: slide ? slide.getObjectId() : null,
+          slide_index: slideIndex > -1 ? slideIndex : null,
+          content_sha: computeSha256(fullText) 
+        },
+        text: { blocks: blocks, char_count: fullText.length }
       };
     }
   } catch(e) {}
@@ -244,17 +413,127 @@ function handleCitationInGoogle(citation) {
   try {
     if (SpreadsheetApp.getActiveSpreadsheet() && anchor.a1_range) {
       var sheet = anchor.sheet_name ? SpreadsheetApp.getActiveSpreadsheet().getSheetByName(anchor.sheet_name) : SpreadsheetApp.getActiveSheet();
-      sheet.getRange(anchor.a1_range).activate();
+      var range = sheet.getRange(anchor.a1_range);
+      range.activate();
+      
+      var origBgs = range.getBackgrounds();
+      range.setBackground("#FEF08A");
+      SpreadsheetApp.flush();
+      
+      Utilities.sleep(1500);
+      range.setBackgrounds(origBgs);
+    }
+  } catch(e) {}
+
+  try {
+    if (SlidesApp.getActivePresentation() && anchor.slide_index != null) {
+      var pres = SlidesApp.getActivePresentation();
+      var slides = pres.getSlides();
+      if (anchor.slide_index >= 0 && anchor.slide_index < slides.length) {
+        slides[anchor.slide_index].selectAsCurrentPage();
+      }
     }
   } catch(e) {}
 
   try {
     if (DocumentApp.getActiveDocument()) {
+      var doc = DocumentApp.getActiveDocument();
+      var body = doc.getBody();
+      
+      if (anchor.start_offset != null && anchor.end_offset != null) {
+        var start = anchor.start_offset;
+        var end = anchor.end_offset;
+        var currentOffset = 0;
+        var startElement = null;
+        var startOffsetInElement = 0;
+        var endElement = null;
+        var endOffsetInElement = 0;
+        
+        var numChildren = body.getNumChildren();
+        for (var i = 0; i < numChildren; i++) {
+          var child = body.getChild(i);
+          if (child.editAsText) {
+            var text = child.asText().getText() + "\n";
+            var textLen = text.length;
+            
+            if (!startElement && start >= currentOffset && start < currentOffset + textLen) {
+              startElement = child.asText();
+              startOffsetInElement = start - currentOffset;
+            }
+            if (!endElement && end >= currentOffset && end <= currentOffset + textLen) {
+              endElement = child.asText();
+              endOffsetInElement = end - currentOffset;
+              if (endOffsetInElement > child.asText().getText().length) {
+                endOffsetInElement = child.asText().getText().length;
+              }
+            }
+            
+            currentOffset += textLen;
+            if (startElement && endElement) break;
+          }
+        }
+        
+        if (startElement && endElement) {
+          var rangeBuilder = doc.newRange();
+          rangeBuilder.addElement(startElement, startOffsetInElement, endOffsetInElement); // Simplified for same-element selection
+          if (startElement === endElement) {
+              rangeBuilder = doc.newRange();
+              rangeBuilder.addElement(startElement, startOffsetInElement, endOffsetInElement);
+          } else {
+              rangeBuilder = doc.newRange();
+              rangeBuilder.addElementsBetween(startElement, endElement);
+          }
+          var builtRange = rangeBuilder.build();
+          doc.setSelection(builtRange);
+          
+          var els = builtRange.getRangeElements();
+          var origBg = [];
+          for (var i = 0; i < els.length; i++) {
+             var el = els[i].getElement();
+             if (el.editAsText) {
+                var bg = el.asText().getBackgroundColor(els[i].getStartOffset() || 0) || null;
+                origBg.push({el: el.asText(), bg: bg, start: els[i].getStartOffset(), end: els[i].getEndOffsetInclusive()});
+                if (els[i].isPartial()) {
+                  el.asText().setBackgroundColor(els[i].getStartOffset(), els[i].getEndOffsetInclusive(), "#FEF08A");
+                } else {
+                  el.asText().setBackgroundColor("#FEF08A");
+                }
+             }
+          }
+          
+          Utilities.sleep(1500);
+          
+          for (var j = 0; j < origBg.length; j++) {
+             var item = origBg[j];
+             if (item.start != -1 && item.end != -1) {
+                item.el.setBackgroundColor(item.start, item.end, item.bg);
+             } else {
+                item.el.setBackgroundColor(item.bg);
+             }
+          }
+          return;
+        }
+      }
+      
+      // Fallback to findText
       var needle = (citation.label || "").trim().substring(0, 200);
-      var body = DocumentApp.getActiveDocument().getBody();
       var found = body.findText(needle);
       if (found) {
-        DocumentApp.getActiveDocument().setSelection(found);
+        doc.setSelection(found);
+      }
+    }
+  } catch(e) {}
+
+  try {
+    if (SlidesApp.getActivePresentation()) {
+      if (anchor.slide_id) {
+         var slide = SlidesApp.getActivePresentation().getSlideById(anchor.slide_id);
+         if (slide) slide.selectAsCurrentPage();
+      } else if (anchor.slide_index != null) {
+         var slides = SlidesApp.getActivePresentation().getSlides();
+         if (slides.length > anchor.slide_index) {
+           slides[anchor.slide_index].selectAsCurrentPage();
+         }
       }
     }
   } catch(e) {}
@@ -293,6 +572,20 @@ function createSidebarCard() {
   
   card.addSection(section);
   return card.build();
+}
+
+function getDocumentIdInGoogle() {
+  try { if (SpreadsheetApp.getActiveSpreadsheet()) return SpreadsheetApp.getActiveSpreadsheet().getId(); } catch(e) {}
+  try { if (DocumentApp.getActiveDocument()) return DocumentApp.getActiveDocument().getId(); } catch(e) {}
+  try { if (SlidesApp.getActivePresentation()) return SlidesApp.getActivePresentation().getId(); } catch(e) {}
+  return "google-0";
+}
+
+function getDocumentTitleInGoogle() {
+  try { if (SpreadsheetApp.getActiveSpreadsheet()) return SpreadsheetApp.getActiveSpreadsheet().getName(); } catch(e) {}
+  try { if (DocumentApp.getActiveDocument()) return DocumentApp.getActiveDocument().getName(); } catch(e) {}
+  try { if (SlidesApp.getActivePresentation()) return SlidesApp.getActivePresentation().getName(); } catch(e) {}
+  return "the open document";
 }
 
 function onHomepage(e) { return createSidebarCard(); }

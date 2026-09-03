@@ -157,7 +157,7 @@ export function LoginApp({
     } else if (typeof Office !== "undefined" && Office.context?.ui && typeof Office.context.ui.messageParent === "function") {
       Office.context.ui.messageParent(JSON.stringify({ ok: true, tokens, orgId }));
     } else if (window.opener) {
-      window.opener.postMessage(JSON.stringify({ ok: true, tokens, orgId }), "*");
+      window.opener.postMessage(JSON.stringify({ ok: true, tokens, orgId }), window.location.origin);
       window.close();
     } else {
       // Fallback for direct browser testing

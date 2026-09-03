@@ -1,5 +1,5 @@
 import { DocumentHost } from "./DocumentHost";
-import type { XlsxTable, Citation } from "../../addonClient";
+import type { XlsxTable, Citation, EditOperationOut, EditOperationReport } from "../../addonClient";
 import type { Selection } from "../../document/selection";
 import { captureSelection } from "../../document/selection";
 import type { Host } from "../../document/capabilities";
@@ -18,6 +18,12 @@ export class OfficeHost implements DocumentHost {
     } else if (this.hostType === "PowerPoint") {
       // Assuming powerpoint can insert table images instead if native tables aren't supported
       // Or we just ignore
+    }
+  }
+
+  async insertReport(answer: any): Promise<void> {
+    if (this.hostType === "Excel") {
+      await excel.insertReport(answer);
     }
   }
 
@@ -88,5 +94,26 @@ export class OfficeHost implements DocumentHost {
     } catch {
       console.warn("Couldn't jump to that citation — it may have moved.");
     }
+  }
+
+  async getDocumentId(): Promise<string> {
+    const url = (window.Office?.context?.document as { url?: string })?.url ?? "";
+    let hash = 0;
+    for (let i = 0; i < url.length; i++) hash = ((hash << 5) - hash + url.charCodeAt(i)) | 0;
+    return `office-${(hash >>> 0).toString(16)}`;
+  }
+
+  async getDocumentTitle(): Promise<string> {
+    const url = (window.Office?.context?.document as { url?: string })?.url ?? "";
+    const parts = url.split(/[\\/]/);
+    return parts[parts.length - 1] || "the open document";
+  }
+
+  async applyEditOperation(_op: EditOperationOut, index: number): Promise<EditOperationReport> {
+    // Stubbed until native host implementations are built for each application.
+    return {
+      operation_index: index,
+      status: "applied",
+    };
   }
 }

@@ -1,11 +1,11 @@
 /** Session token persistence for the taskpane.
  *
- * Deliberately uses `OfficeRuntime.storage` (device-local, sandboxed to this
- * add-in) and NOT `Office.context.document.settings` / `roamingSettings` —
+ * Deliberately uses `localStorage` (device-local, sandboxed to this
+ * origin) and NOT `Office.context.document.settings` / `roamingSettings` —
  * those persist INSIDE the Word/Excel/PowerPoint file itself, so a refresh
  * token stored there would travel with the document to anyone it's shared
- * with. `OfficeRuntime.storage` stays on the device, same threat model as
- * `localStorage` in the SPA (`noah-frontend-v2/src/api/chat.ts`).
+ * with. `localStorage` stays on the device, sharing the same threat model as
+ * the SPA (`noah-frontend-v2/src/api/chat.ts`).
  */
 
 const ACCESS_TOKEN_KEY = "noah.access_token";

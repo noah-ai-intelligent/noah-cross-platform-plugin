@@ -39,6 +39,7 @@ export interface Bootstrap {
   organizations: { id: string; name: string; is_admin: boolean }[];
   branding: { app_name: string; logo_url: string };
   context_policy: ContextPolicy;
+  features?: Record<string, boolean>;
 }
 
 export interface AddonAgent {
@@ -74,6 +75,82 @@ export interface XlsxTable {
   chart_type: string | null;
 }
 
+export type EditOperationType = "replace_cells" | "insert_text" | "add_comment" | "highlight";
+
+export interface EditOperationOut {
+  type: EditOperationType;
+  anchor: SelectionAnchor;
+  expected_hash: string;
+  payload: Record<string, any>;
+}
+
+export interface EditOperationReport {
+  operation_index: number;
+  status: "applied" | "rejected" | "conflict";
+  reason?: string;
+}
+
+export interface EditPlanOut {
+  edit_plan_id: string;
+  operations: EditOperationOut[];
+  summary: string;
+  steps: string[];
+  requires_confirmation: boolean;
+}
+
+export interface AddonOperation {
+  type: "header" | "title" | "subtitle" | "heading" | "paragraph" | "bullet" | "numbered" | "table" | "chart" | "slide_break";
+  text: string;
+  level: number;
+  table_index: number | null;
+  chart_type: string;
+  native_chart: boolean;
+}
+
+export interface AddonHeaderLine {
+  text: string;
+  bold: boolean;
+  size: number;
+  align: string;
+  color: string | null;
+}
+
+export interface AddonHeader {
+  lines: AddonHeaderLine[];
+  image_base64: string | null;
+  image_width_px: number;
+  position: string;
+  placement: string;
+}
+
+export interface AddonReport {
+  title: string;
+  subtitle: string;
+  header: AddonHeader | null;
+}
+
+export interface AddonColumnFormat {
+  index: number;
+  number_format: string;
+  align: string;
+  bar: boolean;
+}
+
+export interface AddonPanel {
+  title: string;
+  table_index: number;
+  accent: string;
+  columns: AddonColumnFormat[];
+  has_total_row: boolean;
+  chart_index: number | null;
+}
+
+export interface AddonLayout {
+  kind: string;
+  columns: number;
+  panels: AddonPanel[];
+}
+
 export interface AddonAnswer {
   conversation_id: string;
   surface: string;
@@ -82,6 +159,8 @@ export interface AddonAnswer {
   blocks: CitedBlock[];
   tables: XlsxTable[];
   charts: { table_index: number; chart_type: string; native: boolean; title: string }[];
+  report?: AddonReport | null;
+  layout?: AddonLayout;
   intent: {
     artifact: string;
     requested_surface: string | null;
@@ -90,11 +169,12 @@ export interface AddonAnswer {
     is_update?: boolean;
   };
   plan: {
-    operations: unknown[];
+    operations: AddonOperation[];
     summary: string;
     steps: string[];
     requires_confirmation: boolean;
   };
+  edit_plan?: EditPlanOut;
   notes: string[];
   citations: Citation[];
   context_snapshot_id: string;
@@ -310,5 +390,22 @@ export function renderChartPng(
   return request(`/addons/organizations/${orgId}/charts/render`, {
     method: "POST",
     body: JSON.stringify({ chart_type: chartType, table }),
+  });
+}
+
+export function confirmEditPlan(orgId: string, editPlanId: string): Promise<EditPlanOut> {
+  return request(`/addons/organizations/${orgId}/edit-plans/${editPlanId}/confirm`, {
+    method: "POST",
+  });
+}
+
+export function reportEditPlan(
+  orgId: string,
+  editPlanId: string,
+  outcomes: EditOperationReport[]
+): Promise<void> {
+  return request(`/addons/organizations/${orgId}/edit-plans/${editPlanId}/report`, {
+    method: "POST",
+    body: JSON.stringify({ outcomes }),
   });
 }

@@ -31,6 +31,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
     headers: {
       "Content-Type": "application/json",
       "X-Client-Platform": CLIENT_PLATFORM,
+      "ngrok-skip-browser-warning": "69420",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...timeHeaders(),
       ...(init.headers ?? {}),
@@ -48,6 +49,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
             headers: {
               "Content-Type": "application/json",
               "X-Client-Platform": CLIENT_PLATFORM,
+              "ngrok-skip-browser-warning": "69420",
               ...timeHeaders(),
             },
             body: JSON.stringify({ refresh_token: refreshToken }),
@@ -81,6 +83,7 @@ export async function request<T>(path: string, init: RequestInit = {}): Promise<
         headers: {
           "Content-Type": "application/json",
           "X-Client-Platform": CLIENT_PLATFORM,
+          "ngrok-skip-browser-warning": "69420",
           Authorization: `Bearer ${token}`,
           ...timeHeaders(),
           ...(init.headers ?? {}),

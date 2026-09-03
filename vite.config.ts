@@ -58,6 +58,7 @@ export default defineConfig(async (): Promise<UserConfig> => {
               login: resolve(__dirname, "src/login/login.html"),
               commands: resolve(__dirname, "src/commands/commands.html"),
             },
+        output: isGoogle ? { format: "iife", inlineDynamicImports: true } : undefined,
       },
     },
   };

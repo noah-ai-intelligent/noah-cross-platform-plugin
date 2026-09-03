@@ -7,10 +7,12 @@ export function NoahShell({ children }: { children: ReactNode }) {
 
 export function NoahHeader({
   title,
+  subtitle,
   onBack,
   actions,
 }: {
   title: string;
+  subtitle?: ReactNode;
   onBack?: () => void;
   actions?: ReactNode;
 }) {
@@ -24,7 +26,10 @@ export function NoahHeader({
         ) : (
           <img src={logoUrl} alt="Noah Logo" className="w-[22px] h-[22px] object-contain flex-none" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
         )}
-        <span className="font-semibold text-[14px] text-ink overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+        <div className="flex flex-col min-w-0">
+          <span className="font-semibold text-[14px] text-ink overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
+          {subtitle && <div className="text-[11px] text-ink-secondary truncate">{subtitle}</div>}
+        </div>
       </div>
       <div className="flex items-center gap-1 flex-none">{actions}</div>
     </div>
