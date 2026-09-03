@@ -17,6 +17,15 @@ export class GoogleHost implements DocumentHost {
     });
   }
 
+  insertReport(answer: any): Promise<void> {
+    return new Promise((resolve, reject) => {
+      google.script.run
+        .withSuccessHandler(() => resolve())
+        .withFailureHandler((error: Error) => reject(error))
+        .insertReportInGoogle(answer);
+    });
+  }
+
   insertChart(chartType: string, rangeAddress: string): Promise<void> {
     return new Promise((resolve, reject) => {
       google.script.run

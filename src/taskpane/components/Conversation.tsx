@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from "react";
+import React, { useMemo } from "react";
 import type { AddonAnswer, Citation, XlsxTable, EditPlanOut } from "../../addonClient";
 import type { ChatMessage } from "../../chatClient";
 import { describeAnchor } from "../../document/anchor";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { ChartPreview } from './ChartPreview';
 
 export function parseMarkdownTable(markdown: string): XlsxTable | null {
   if (!markdown) return null;
@@ -166,8 +167,14 @@ export function PaginatedTable({ children, ...props }: any) {
   const paginatedTbody = React.cloneElement(tbody as React.ReactElement, {}, currentRows);
 
   return (
-    <div className="flex flex-col gap-2 my-4">
-      <div className="overflow-x-auto rounded-lg border border-zinc-200 shadow-sm">
+    <details className="flex flex-col gap-2 my-4 border border-zinc-200/80 rounded-xl overflow-hidden group shadow-xs">
+      <summary className="px-3.5 py-2 text-[12px] font-semibold text-zinc-500 cursor-pointer select-none bg-zinc-50/80 hover:bg-zinc-100 flex items-center gap-2 transition-colors">
+        <svg className="w-3.5 h-3.5 text-zinc-400 group-open:rotate-90 transition-transform duration-200" viewBox="0 0 16 16" fill="none" stroke="currentColor">
+          <path d="M6 12L10 8L6 4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        View Table Data
+      </summary>
+      <div className="overflow-x-auto border-t border-zinc-100">
         <table className="w-full text-left border-collapse" {...props}>
           {thead}
           {paginatedTbody}
@@ -219,7 +226,7 @@ export function PaginatedTable({ children, ...props }: any) {
           </div>
         </div>
       )}
-    </div>
+    </details>
   );
 }
 
@@ -256,17 +263,14 @@ export function ParsedMarkdown({ content }: { content: string }) {
           // If it's the last part and doesn't have a closing tag, we assume it's streaming
           const isStreaming = i === parts.length - 1 && !content.toLowerCase().includes(`${lt}/${(p.tag || "").toLowerCase()}${gt}`, lastIdx - 10);
           return (
-            <details key={i} open={isStreaming} className="mb-3 border border-zinc-200/80 rounded-xl overflow-hidden group shadow-xs">
-              <summary className="px-3.5 py-2 text-[12px] font-semibold text-zinc-500 cursor-pointer select-none bg-zinc-50/80 hover:bg-zinc-100 flex items-center gap-2 transition-colors">
-                <svg className="w-3.5 h-3.5 text-zinc-400 group-open:rotate-90 transition-transform duration-200" viewBox="0 0 16 16" fill="none" stroke="currentColor">
-                  <path d="M6 12L10 8L6 4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                {isStreaming ? "Thinking..." : "Thought Process"}
-              </summary>
-              <div className="px-4 py-3 text-[13px] text-zinc-600 bg-white border-t border-zinc-100 whitespace-pre-wrap font-serif italic leading-relaxed">
-                {p.content || <span className="animate-pulse text-zinc-400">...</span>}
+            <div key={i} className={`flex items-start gap-2 mb-2 ${isStreaming ? "animate-pulse" : "opacity-80"}`}>
+              <svg className="w-4 h-4 text-zinc-400 mt-0.5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6" />
+              </svg>
+              <div className="text-[13px] text-zinc-500 font-medium font-serif italic">
+                {p.content || "Thinking..."} {isStreaming ? "" : ">"}
               </div>
-            </details>
+            </div>
           );
         }
         return (
@@ -275,6 +279,24 @@ export function ParsedMarkdown({ content }: { content: string }) {
             remarkPlugins={[remarkGfm]}
             components={{
               table: PaginatedTable,
+              code({ node, inline, className, children, ...props }: any) {
+                const match = /language-(\w+)/.exec(className || "");
+                if (!inline && match && match[1] === "chart") {
+                  const jsonString = String(children).replace(/\n$/, "");
+                  return <ChartPreview jsonString={jsonString} />;
+                }
+                return !inline ? (
+                  <pre className="bg-zinc-100 p-3 rounded-lg overflow-x-auto text-xs my-2 font-mono">
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
+                ) : (
+                  <code className="bg-zinc-100 px-1 py-0.5 rounded text-[0.9em] font-mono text-zinc-800" {...props}>
+                    {children}
+                  </code>
+                );
+              },
             }}
           >
             {p.content}
@@ -292,6 +314,7 @@ export function AssistantMessage({
   host,
   onInsertProse,
   onInsertTable,
+  onInsertReport,
   onCitation,
   onApplyEditPlan,
   onRejectEditPlan,
@@ -302,12 +325,12 @@ export function AssistantMessage({
   host: string;
   onInsertProse: (text: string) => void;
   onInsertTable?: (table: XlsxTable) => void;
+  onInsertReport?: (answer: AddonAnswer) => void;
   onCitation?: (c: Citation) => void;
   onApplyEditPlan?: (plan: EditPlanOut) => void;
   onRejectEditPlan?: (plan: EditPlanOut) => void;
   requiresConfirmation?: boolean;
 }) {
-  const [insertionRejected, setInsertionRejected] = useState(false);
   const textBlocks = message.content.filter((b) => b.type === "text" && typeof b.text === "string" && b.text.trim().length > 0);
   const fullText = textBlocks.map((b) => b.text).join("\n\n");
   const targetProse = fullText || answer?.prose || "";
@@ -322,13 +345,14 @@ export function AssistantMessage({
     answer &&
     answer.blocks &&
     answer.blocks.length > 0 &&
-    answer.blocks.some((b) => b.text && b.text.trim().length > 0);
+    answer.blocks.some((b) => b.type === "table" || (b.text && b.text.trim().length > 0));
 
   if (!fullText.trim() && !hasValidAnswerBlocks && !answer?.markdown && !answer?.prose) {
     return null;
   }
 
-  const hasActions = host === "Excel" ? Boolean(parsedTable && onInsertTable) : Boolean(targetProse || (parsedTable && onInsertTable));
+  const hasReport = host === "Excel" && answer?.plan?.operations && answer.plan.operations.length > 0;
+  const hasActions = host === "Excel" ? Boolean(hasReport || (parsedTable && onInsertTable)) : Boolean(targetProse || (parsedTable && onInsertTable));
 
   return (
     <div className="flex flex-col gap-1 items-start animate-fadeIn my-1">
@@ -406,11 +430,24 @@ export function AssistantMessage({
         )}
 
 
-        {hasActions && !insertionRejected && (
+        {hasActions && (
           (answer ? (answer.plan?.requires_confirmation ?? requiresConfirmation) : true) ? (
             <ActionBar>
               {host === "Excel" ? (
-                parsedTable && onInsertTable ? (
+                hasReport && onInsertReport ? (
+                  <button
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-emerald-200 bg-emerald-50 rounded-md text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
+                    onClick={() => onInsertReport(answer!)}
+                    title="Insert dashboard"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 3h18v18H3z"></path>
+                      <path d="M3 9h18"></path>
+                      <path d="M9 21V9"></path>
+                    </svg>
+                    Insert Dashboard into sheet
+                  </button>
+                ) : parsedTable && onInsertTable ? (
                   <button
                     className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 border border-emerald-200 bg-emerald-50 rounded-md text-xs font-medium text-emerald-700 hover:bg-emerald-100 transition-colors cursor-pointer"
                     onClick={() => onInsertTable(parsedTable)}
@@ -457,6 +494,7 @@ export function ConversationView({
   host,
   onInsertProse,
   onInsertTable,
+  onInsertReport,
   onCitation,
   onApplyEditPlan,
   onRejectEditPlan,
@@ -471,6 +509,7 @@ export function ConversationView({
   host: string;
   onInsertProse: (text: string) => void;
   onInsertTable?: (table: XlsxTable) => void;
+  onInsertReport?: (answer: AddonAnswer) => void;
   onCitation?: (c: Citation) => void;
   onApplyEditPlan?: (plan: EditPlanOut) => void;
   onRejectEditPlan?: (plan: EditPlanOut) => void;
@@ -526,6 +565,7 @@ export function ConversationView({
             host={host}
             onInsertProse={onInsertProse}
             onInsertTable={onInsertTable}
+            onInsertReport={onInsertReport}
             onCitation={onCitation}
             onApplyEditPlan={onApplyEditPlan}
             onRejectEditPlan={onRejectEditPlan}
@@ -541,6 +581,7 @@ export function ConversationView({
           host={host}
           onInsertProse={onInsertProse}
           onInsertTable={onInsertTable}
+          onInsertReport={onInsertReport}
           onCitation={onCitation}
           requiresConfirmation={requiresConfirmation}
         />

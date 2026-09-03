@@ -428,11 +428,14 @@ export function App() {
 
       const requiresConfirmation = answer.plan?.requires_confirmation ?? me?.features?.requires_confirmation ?? true;
       if (!requiresConfirmation) {
+        const hasReport = host === "Excel" && answer.plan?.operations && answer.plan.operations.length > 0;
         const tableFromAnswer = answer.tables && answer.tables.length > 0 ? answer.tables[0] : null;
         const parsedTable = tableFromAnswer || parseMarkdownTable(baseText);
         const targetProse = baseText;
 
-        if (host === "Excel" && parsedTable) {
+        if (host === "Excel" && hasReport) {
+          void handleInsertReport(answer);
+        } else if (host === "Excel" && parsedTable) {
           void handleInsertTable(parsedTable);
         } else if (parsedTable && !targetProse.trim()) {
           void handleInsertTable(parsedTable);
@@ -543,6 +546,14 @@ export function App() {
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not render the chart.");
+    }
+  }
+
+  async function handleInsertReport(answer: AddonAnswer) {
+    try {
+      await documentHost.insertReport(answer);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not insert the report.");
     }
   }
 
@@ -747,6 +758,7 @@ export function App() {
               host={host}
               onInsertProse={handleInsertProse}
               onInsertTable={handleInsertTable}
+              onInsertReport={handleInsertReport}
               onCitation={handleCitation}
               onApplyEditPlan={handleApplyEditPlan}
               onRejectEditPlan={handleRejectEditPlan}

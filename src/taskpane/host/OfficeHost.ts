@@ -21,6 +21,12 @@ export class OfficeHost implements DocumentHost {
     }
   }
 
+  async insertReport(answer: any): Promise<void> {
+    if (this.hostType === "Excel") {
+      await excel.insertReport(answer);
+    }
+  }
+
   async insertChart(chartType: string, rangeAddress: string): Promise<void> {
     if (this.hostType === "Excel") {
       await excel.insertChart(chartType, rangeAddress);

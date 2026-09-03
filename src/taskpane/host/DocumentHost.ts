@@ -11,4 +11,5 @@ export interface DocumentHost {
   getDocumentId(): Promise<string>;
   getDocumentTitle(): Promise<string>;
   applyEditOperation(op: EditOperationOut, index: number): Promise<EditOperationReport>;
+  insertReport(answer: any): Promise<void>;
 }
